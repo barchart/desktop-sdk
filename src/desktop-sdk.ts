@@ -515,11 +515,12 @@ export class DesktopSdk {
 
     // ---- state ----
 
-    // A symbol is a subscribed name (aliases included) or an instrument's own symbol (#marketIdOf).
+    // A symbol is a subscribed name (aliases included) or the definition symbol of a market a subscription holds
+    // (#marketIdOf).
 
     /**
      * The instrument's definition: its description, exchange, price format and more. Its `symbol` is the one passed
-     * here, so `getInstrument("ES*0").symbol` is `ES*0`; the contract's own is `definition.symbol`.
+     * here, so `getInstrument("ES*1").symbol` is `ES*1`; the contract's own is `definition.symbol`.
      *
      * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
      * subscription holds.
@@ -534,8 +535,9 @@ export class DesktopSdk {
      * The current quote, as the last quote event delivered it. For the same values as strings, use
      * {@link DesktopSdk.getFormattedQuote}.
      *
-     * @param symbol - A subscribed symbol (an alias included) or the instrument's own symbol.
-     * @returns The quote, frozen; `undefined` until the SDK has one.
+     * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
+     * subscription holds.
+     * @returns The quote, frozen; `undefined` until the SDK has one, or when no subscription holds it.
      */
     getQuote(symbol: string): QuoteRecord | undefined {
         return this.#store.getQuoteById(this.#marketIdOf(symbol));
@@ -544,8 +546,9 @@ export class DesktopSdk {
     /**
      * The current quote as strings in the instrument's price format, as a quote event's `formatted` carries them.
      *
-     * @param symbol - A subscribed symbol (an alias included) or the instrument's own symbol.
-     * @returns The formatted quote; `undefined` until the SDK has a quote.
+     * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
+     * subscription holds.
+     * @returns The formatted quote; `undefined` until the SDK has a quote, or when no subscription holds it.
      */
     getFormattedQuote(symbol: string): FormattedQuote | undefined {
         const marketId = this.#marketIdOf(symbol);
@@ -558,8 +561,9 @@ export class DesktopSdk {
      * The current order book, as the last book event delivered it. Each side has the instrument's `bookDepth` levels,
      * best price first; an empty level has price and size 0.
      *
-     * @param symbol - A subscribed symbol (an alias included) or the instrument's own symbol.
-     * @returns The book, frozen; `undefined` until the SDK has one.
+     * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
+     * subscription holds.
+     * @returns The book, frozen; `undefined` until the SDK has one, or when no subscription holds it.
      */
     getBook(symbol: string): Book | undefined {
         return this.#store.getBookById(this.#marketIdOf(symbol));
@@ -568,8 +572,10 @@ export class DesktopSdk {
     /**
      * The volume traded at each price, as the last cumulative volume event delivered it.
      *
-     * @param symbol - A subscribed symbol (an alias included) or the instrument's own symbol.
-     * @returns The levels, ascending by price and frozen; `undefined` until a snapshot brings volume at price.
+     * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
+     * subscription holds.
+     * @returns The levels, ascending by price and frozen; `undefined` until a snapshot brings volume at price, or when no
+     * subscription holds it.
      */
     getCumulativeVolume(symbol: string): readonly PriceVolume[] | undefined {
         return this.#store.getCumulativeVolumeById(this.#marketIdOf(symbol));
