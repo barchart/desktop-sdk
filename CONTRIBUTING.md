@@ -12,7 +12,7 @@ yarn check           # everything CI runs: typecheck, lint, format, tests, API d
 
 Every public export and member needs a TSDoc comment (`/** … */`): users read it on hover, and it becomes the API reference that the npm package ships in `docs/api/`. Write it for people using the SDK, with `@param`, `@returns` and, for the main methods, an `@example`.
 
-`docs/api/` is generated from those comments by TypeDoc (`typedoc.json`) and isn't committed (`.gitignore`): the release build generates it before packing. To read it locally:
+`docs/api/` is generated from those comments by TypeDoc (`typedoc.json`) and isn't committed (`.gitignore`): `yarn pack` generates it first (the `prepack` script), so every package has it. To read it locally:
 
 ```sh
 yarn docs:api
