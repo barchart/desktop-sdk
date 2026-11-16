@@ -48,7 +48,7 @@ Each returns a `Subscription` (§7) at once, in state `pending`.
 - **First callback:** after `subscribe` has returned, never inside it. A new subscriber gets the current state as one `initial` event, or the stored error if the server already refused the subscription.
 - **Shared subscriptions:** subscriptions with the same symbol, type and service share one Openfeed subscription, which closes with the last of them.
 - **Cumulative volume** also holds the symbol's `ALL` subscription on `REAL_TIME`, the one `subscribeQuote` uses by default, so it keeps updating with the symbol's trades. If that subscription fails, the cumulative volume subscribers get its error, with `requiredBy` set. Not every Openfeed server sends volume at price: on one that doesn't, the subscription goes `active`, but no events come and `getCumulativeVolume` stays `undefined`.
-- **Aliases** such as `ZC*1` follow rolls: after a roll, the new contract arrives as a `snapshot` event with the new `instrument`.
+- **Aliases follow rolls.** At a roll, `<ROOT>*<N>` moves on to the contract `<ROOT>*<N+1>` named until then; `<ROOT>*0` follows the most active contract, as Barchart picks it. The new contract arrives as a `snapshot` event with the new `instrument`.
 - **While logged out,** subscriptions stay `pending`, and are sent at the next login.
 
 | Member | |
@@ -128,7 +128,7 @@ Every event has:
 
 | Member | |
 |---|---|
-| `message` | What was refused, then the server's text: `INSUFFICIENT_PRIVILEGES: DEPTH_PRICE on ESZ26 (REAL_TIME) was refused. Server said: "…"`. For reading, not for matching. |
+| `message` | What was refused, then the server's text: `INSUFFICIENT_PRIVILEGES: DEPTH_PRICE on ES*0 (REAL_TIME) was refused. Server said: "…"`. For reading, not for matching. |
 | `result` | The server's answer, a `Result` from `@openfeed/sdk-js`. Decide in code on this. |
 | `symbol` | The symbol subscribed. |
 | `type` | The subscription refused, a `SubscriptionType`. |
@@ -168,7 +168,7 @@ Fields are formatted when read. `JSON.stringify(formatted)` gives every view's v
 
 | Member | |
 |---|---|
-| `symbol` | The symbol you subscribed with, as the event's `symbol`, or the one you passed to `getInstrument`: for `ES*1`, it's `ES*1`. The definition's own `symbol` can be the exchange's (`ESZ6`). |
+| `symbol` | The symbol you subscribed with, as the event's `symbol`, or the one you passed to `getInstrument`: for `ES*0`, it's `ES*0`. Which contract that is, is in `definition`, whose own `symbol` can be the exchange's (`ESZ6`). |
 | `marketId`, `description`, `instrumentType`, `exchangeCode`, `timeZoneName`, `bookDepth`, `minimumPriceIncrement` | From the instrument definition. |
 | `priceFormat` | The `PriceFormat` its prices are written in. |
 | `definition` | The whole `InstrumentDefinition`. |

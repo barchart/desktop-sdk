@@ -22,7 +22,7 @@ const render = (book: Book, instrument: Instrument) => {
     console.log(rows.join("\n"));
 };
 
-sdk.subscribeDepth("ZNZ26", {
+sdk.subscribeDepth("ZN*0", {
     // The event carries the whole book, so a render needs nothing else.
     onEvent({ book, instrument }) {
         render(book, instrument);

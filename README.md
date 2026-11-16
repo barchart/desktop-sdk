@@ -10,7 +10,7 @@ import { DesktopSdk } from "@barchart/desktop-sdk-js";
 const sdk = new DesktopSdk();
 sdk.login({ url: "ws://localhost:9000", username, password });
 
-sdk.subscribeQuote("ESZ26", {
+sdk.subscribeQuote("ES*0", {
     onEvent({ quote, formatted }) {
         console.log(quote.session.last, formatted.session.last); // 6012.25 "6,012.25"
     },
@@ -65,7 +65,7 @@ Every event also has `symbol`, `instrument`, `kind` and `raw`, the Openfeed mess
 Each method returns a `Subscription`, with its `state` (`pending`, `active`, `error`, `closed`), its `error`, and `close()`:
 
 ```ts
-const sub = sdk.subscribeDepth("ESZ26", {
+const sub = sdk.subscribeDepth("ES*0", {
     onEvent({ book }) {
         render(book.bids, book.asks);
     },
@@ -80,7 +80,7 @@ sub.close();
 - **Your callbacks never run inside `subscribe`.** The first one comes after it has returned, so you can set things up after subscribing.
 - **Subscribing to the same symbol twice is free.** Subscriptions share one Openfeed subscription, and a new subscriber gets the current state as an `initial` event.
 - **Handle `onError`.** The server can refuse a subscription, for example one your account has no permission for, and nothing else calls you when it does. `onError` gets a `SubscriptionError` whose `message` says what was refused and quotes the server. Decide in code on its `result`, the protocol's value. Later subscribers to the same symbol get it too, without asking the server again.
-- **Wildcard symbols follow rolls.** `ZC*1` keeps pointing at the front contract; after a roll, the new contract arrives as a `snapshot` event with the new `instrument`.
+- **Wildcard symbols follow rolls.** At a roll, `<ROOT>*<N>` moves on to the contract `<ROOT>*<N+1>` named until then. `<ROOT>*0` is the exception: it follows the most active contract, as Barchart picks it. Either way, the new contract arrives as a `snapshot` event with the new `instrument`.
 
 The service defaults to real time (`Service.REAL_TIME` from `@openfeed/sdk-js`); cumulative volume defaults to `Service.REAL_TIME_SNAPSHOT`. Not every Openfeed server sends volume at price: on one that doesn't, the subscription goes `active`, but no events come and `getCumulativeVolume` stays `undefined`.
 
@@ -89,11 +89,11 @@ The service defaults to real time (`Service.REAL_TIME` from `@openfeed/sdk-js`);
 Each symbol's current state, as the last event delivered it:
 
 ```ts
-sdk.getInstrument("ESZ26"); // Instrument
-sdk.getQuote("ESZ26"); // QuoteRecord
-sdk.getFormattedQuote("ESZ26"); // FormattedQuote
-sdk.getBook("ESZ26"); // Book
-sdk.getCumulativeVolume("ESZ26"); // { price, volume }[], ascending by price
+sdk.getInstrument("ES*0"); // Instrument
+sdk.getQuote("ES*0"); // QuoteRecord
+sdk.getFormattedQuote("ES*0"); // FormattedQuote
+sdk.getBook("ES*0"); // Book
+sdk.getCumulativeVolume("ES*0"); // { price, volume }[], ascending by price
 ```
 
 They return `undefined` until the SDK has the state. Everything they and the events return is **immutable**: frozen objects that you can keep, compare by identity and pass around. The dates in a quote are `Date` objects; treat them as read-only too.

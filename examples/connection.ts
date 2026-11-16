@@ -20,7 +20,7 @@ sdk.onHeartbeat((serverTime) => {
 });
 
 // Subscriptions made while logged out stay `pending`, and are sent at login.
-const subscription = sdk.subscribeQuote("ESZ26", {
+const subscription = sdk.subscribeQuote("ES*0", {
     onEvent: ({ quote }) => {
         console.log(quote.session.last);
     },
