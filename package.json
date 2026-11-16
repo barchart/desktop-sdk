@@ -51,6 +51,7 @@
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "docs:api": "typedoc",
+        "prepack": "yarn docs:api",
         "test": "vitest run",
         "test:watch": "vitest",
         "check:package": "publint && attw --pack . --profile esm-only",
