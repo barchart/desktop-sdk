@@ -34,11 +34,8 @@ yarn build:watch   # rebuilds dist/ on every change, with source maps into src/
 
 Linking depends on the application's package manager:
 
-- **Yarn 1:** run `yarn link:dev` here once; it registers the package with Yarn 1 (`yarn unlink:dev` removes it). Then run `yarn link @barchart/desktop-sdk-js` in the application.
 - **Yarn 2 or later:** run `yarn link <path to this repository>` in the application.
 - **npm:** run `npm link` here, then `npm link @barchart/desktop-sdk-js` in the application.
-
-This repository uses Yarn 4, whose `yarn link` works from the application's side, so a plain `yarn link` here doesn't register anything for Yarn 1. `link:dev` runs Yarn 1 for that one command; `yarn` in this folder stays Yarn 4.
 
 **The application must use its own `@openfeed/sdk-js` and `long`.** A linked package resolves its imports from this repository's `node_modules`, which has its own copies (for the tests). Two copies mean two Openfeed clients and two sets of protocol types and enums. With Vite:
 

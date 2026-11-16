@@ -17,7 +17,7 @@ The npm package ships `dist/`, `docs/`, `examples/`, `llms.txt`, `README.md` and
 
 ## Debugging in an application
 
-`CONTRIBUTING.md`, "Working on the SDK inside an application": link the repo into the application and run `yarn build:watch` here. For a Yarn 1 application, `yarn link:dev` registers the package with Yarn 1 (this repo's Yarn 4 `yarn link` works from the application's side instead). The application's bundler must resolve `@openfeed/sdk-js` and `long` to its own copies (Vite: `resolve.dedupe`), or there are two Openfeed clients and two copies of the protocol types. Keep `CONTRIBUTING.md` in step with the scripts and the commit rules.
+`CONTRIBUTING.md`, "Working on the SDK inside an application": link the repo into the application and run `yarn build:watch` here. The application's bundler must resolve `@openfeed/sdk-js` and `long` to its own copies (Vite: `resolve.dedupe`), or there are two Openfeed clients and two copies of the protocol types. Keep `CONTRIBUTING.md` in step with the scripts and the commit rules.
 
 ## Commands
 
@@ -33,7 +33,6 @@ yarn test            # Vitest; yarn test:watch to watch
 yarn docs:api        # TypeDoc (on TypeScript 6): the TSDoc comments into docs/api/, as Markdown; fails on a public item without docs or a broken {@link}
 yarn build           # TypeScript 7 (tsconfig.build.json): src/ into dist/, then tsc-alias adds .js to relative imports
 yarn build:watch     # the same on every change, with source and declaration maps into src/, for a linked package
-yarn link:dev        # registers this package with Yarn 1, for linking into a Yarn 1 application (unlink:dev undoes it)
 yarn check:esm       # loads the built package in Node, as a user would
 yarn commitlint --from main   # checks the branch's commit messages, as CI does on pull requests
 ```
