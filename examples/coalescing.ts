@@ -10,7 +10,7 @@ sdk.onConnectionState((state) => {
 });
 sdk.login({ url: "ws://localhost:9000", username: "your-username", password: "your-password" });
 
-for (const symbol of ["ESZ26", "NQZ26", "ZNZ26", "CLZ26"]) {
+for (const symbol of ["ES*0", "NQ*0", "ZN*0", "CL*0"]) {
     sdk.subscribeQuote(symbol, {
         onEvent({ formatted }) {
             console.log(symbol, formatted.session.last);

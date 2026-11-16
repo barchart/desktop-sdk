@@ -12,7 +12,7 @@ sdk.login({ url: "ws://localhost:9000", username: "your-username", password: "yo
 
 const volumeAtPrice = new Map<number, number>();
 
-sdk.subscribeCumulativeVolume("ESZ26", {
+sdk.subscribeCumulativeVolume("ES*0", {
     onEvent({ kind, changed, levels }) {
         // On `initial` and `snapshot`, `changed` is every level, and levels not in it are gone.
         if (kind !== "update") {

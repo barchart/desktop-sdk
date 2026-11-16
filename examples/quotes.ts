@@ -17,7 +17,7 @@ sdk.onConnectionState((state) => {
 // The Barchart Desktop API, signed in with your Barchart Desktop credentials
 sdk.login({ url: "ws://localhost:9000", username: "your-username", password: "your-password" });
 
-const subscription = sdk.subscribeQuote("ESZ26", {
+const subscription = sdk.subscribeQuote("ES*0", {
     onEvent({ kind, instrument, quote, formatted }) {
         // `initial` once, with the state the SDK already had; then `snapshot` or `update` per change
         console.log(kind, instrument.symbol, formatted.session.last, quote.session.volume);
@@ -31,7 +31,7 @@ const subscription = sdk.subscribeQuote("ESZ26", {
 
 // Events for a minute. The state is also there to read between events: undefined until the SDK has it.
 await delay(60_000);
-console.log("last after a minute:", sdk.getQuote("ESZ26")?.session.last);
+console.log("last after a minute:", sdk.getQuote("ES*0")?.session.last);
 
 // No callback arrives after close() returns.
 subscription.close();
