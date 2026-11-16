@@ -142,7 +142,7 @@ const mergeChanges = (earlier: InstrumentChange, later: InstrumentChange): Instr
  * const sdk = new DesktopSdk({ logger: console });
  * sdk.login({ url: "ws://localhost:9000", username: "your-username", password: "your-password" });
  *
- * const subscription = sdk.subscribeQuote("ESZ26", {
+ * const subscription = sdk.subscribeQuote("ES*0", {
  *     onEvent({ kind, instrument, formatted }) {
  *         console.log(kind, instrument.symbol, formatted.session.last);
  *     },
@@ -443,7 +443,7 @@ export class DesktopSdk {
      *
      * @example
      * ```ts
-     * const subscription = sdk.subscribeQuote("ESZ26", {
+     * const subscription = sdk.subscribeQuote("ES*0", {
      *     onEvent({ kind, formatted }) {
      *         console.log(kind, formatted.session.last, formatted.bestBidOffer.bidPrice, formatted.bestBidOffer.askPrice);
      *     },
@@ -472,7 +472,7 @@ export class DesktopSdk {
      *
      * @example
      * ```ts
-     * const subscription = sdk.subscribeDepth("ESZ26", {
+     * const subscription = sdk.subscribeDepth("ES*0", {
      *     onEvent({ book }) {
      *         console.log("best bid", book.bids[0]?.price, "best ask", book.asks[0]?.price);
      *     },
@@ -500,7 +500,7 @@ export class DesktopSdk {
      *
      * @example
      * ```ts
-     * const subscription = sdk.subscribeCumulativeVolume("ESZ26", {
+     * const subscription = sdk.subscribeCumulativeVolume("ES*0", {
      *     onEvent({ changed }) {
      *         for (const { price, volume } of changed) {
      *             console.log(price, volume);
@@ -520,7 +520,7 @@ export class DesktopSdk {
 
     /**
      * The instrument's definition: its description, exchange, price format and more. Its `symbol` is the one passed
-     * here, so `getInstrument("ES*1").symbol` is `ES*1`; the contract's own is `definition.symbol`.
+     * here, so `getInstrument("ES*0").symbol` is `ES*0`; the contract's own is `definition.symbol`.
      *
      * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
      * subscription holds.

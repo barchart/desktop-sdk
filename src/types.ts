@@ -86,7 +86,7 @@ const getErrorMessage = (
  *
  * @example
  * ```ts
- * error.message; // 'INSUFFICIENT_PRIVILEGES: DEPTH_PRICE on ESZ26 (REAL_TIME) was refused. Server said: "…"'
+ * error.message; // 'INSUFFICIENT_PRIVILEGES: DEPTH_PRICE on ES*0 (REAL_TIME) was refused. Server said: "…"'
  * ```
  */
 export class SubscriptionError extends Error {
@@ -163,7 +163,7 @@ export type EventKind = "initial" | "snapshot" | "update";
 
 /** What every event carries. Exported for the SDK's own use; index.ts doesn't re-export it. */
 export interface EventBase {
-    /** The symbol as subscribed, an alias such as `ZC*1` included. */
+    /** The symbol as subscribed, an alias such as `ZC*0` included. */
     readonly symbol: string;
     /** The instrument the symbol stands for, with `symbol` set to it; after an alias rolls, the new contract. */
     readonly instrument: Instrument;

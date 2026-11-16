@@ -59,7 +59,7 @@ Listeners are called inside `try/catch`: one that throws is logged, and the rest
 One state per `marketId`, since a `marketId` is one listed instrument on its exchange: the `Instrument`, the quote record, the book, the cumulative volume (a map from price to volume, and its ascending levels), and the last snapshot and last applied update.
 
 - **State only, for named markets.** Which symbol names which market is the registry's (§6); the store's getters take a `marketId`, and the facade resolves a symbol first. A market message is applied only when an entry names its market; anything else, such as `raw.send`'s traffic or a message still arriving after its subscription closed, reaches the raw listeners only.
-- **Named instruments:** the store keeps one `Instrument` per market, with the definition's `symbol`. The facade hands out a copy per name it's reached by, with `symbol` set to that name (`ES*1`, `ESZ26`), kept until a new definition replaces the store's instrument.
+- **Named instruments:** the store keeps one `Instrument` per market, with the definition's `symbol`. The facade hands out a copy per name it's reached by, with `symbol` set to that name (`ES*0`, `ESZ26`), kept until a new definition replaces the store's instrument.
 - **Definitions** create a market, or replace its instrument and keep its state.
 - **Snapshots and updates without a definition** are skipped: there's nothing to scale them with.
 - **Snapshots** replace the market's state; **updates** go through the reducers below, once the market has had a snapshot.

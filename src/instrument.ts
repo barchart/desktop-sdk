@@ -15,7 +15,7 @@ export interface Instrument {
     readonly marketId: string;
     /**
      * The symbol it was subscribed with, as the event's `symbol`, or the one passed to `sdk.getInstrument`: for
-     * `ES*1`, it's `ES*1`. The definition's own symbol, which can be the exchange's (`ESZ6`), is `definition.symbol`.
+     * `ES*0`, it's `ES*0`. The definition's own symbol, which can be the exchange's (`ESZ6`), is `definition.symbol`.
      */
     readonly symbol: string;
     /** A human-readable description of the market. */
