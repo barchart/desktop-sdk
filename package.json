@@ -44,8 +44,6 @@
         "build": "yarn hooks:install && rm -rf dist && node ./node_modules/typescript-7/bin/tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json --resolve-full-paths",
         "build:watch": "yarn hooks:install && rm -rf dist && (node ./node_modules/typescript-7/bin/tsc -p tsconfig.build.json --sourceMap --declarationMap --watch --preserveWatchOutput & tsc-alias -p tsconfig.build.json --resolve-full-paths --watch)",
         "hooks:install": "husky",
-        "link:dev": "corepack yarn@1.22.22 link",
-        "unlink:dev": "corepack yarn@1.22.22 unlink",
         "typecheck": "node ./node_modules/typescript-7/bin/tsc -p tsconfig.json",
         "lint": "eslint .",
         "format": "prettier --write .",
