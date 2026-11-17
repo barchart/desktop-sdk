@@ -3,4 +3,5 @@ if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env --shell bash)"
 fi
 
-yarn lint-staged
+# the package and its tools are in js/; git runs hooks from the root
+cd js && yarn lint-staged

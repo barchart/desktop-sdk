@@ -2,6 +2,6 @@
 #
 # .github/: the workflows decide what runs in CI and what can publish to npm; this file is here too, so changing the
 # owners needs the owners' review.
-# .yarnrc.yml: it keeps dependencies' install scripts off.
+# js/.yarnrc.yml: it keeps dependencies' install scripts off.
 /.github/ @maximovicd @marenac4
-/.yarnrc.yml @maximovicd @marenac4
+/js/.yarnrc.yml @maximovicd @marenac4
