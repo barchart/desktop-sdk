@@ -1,0 +1,4 @@
+#!/bin/sh
+# The message is a conventional commit (scripts/check_commits.py), which release-please reads. The script needs only
+# Python's standard library. Turned on by scripts/install-hooks.sh.
+exec python3 scripts/check_commits.py --file "$1"
