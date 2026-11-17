@@ -2,6 +2,9 @@
 #
 # .github/: the workflows decide what runs in CI and what can publish to npm; this file is here too, so changing the
 # owners needs the owners' review.
-# js/.yarnrc.yml: it keeps dependencies' install scripts off.
+# .githooks/ and scripts/: the git hooks and what they run, on every contributor's machine.
+# js/.yarnrc.yml: it keeps dependencies' install scripts off, and holds the age gate's one exception.
 /.github/ @maximovicd @marenac4
+/.githooks/ @maximovicd @marenac4
+/scripts/ @maximovicd @marenac4
 /js/.yarnrc.yml @maximovicd @marenac4

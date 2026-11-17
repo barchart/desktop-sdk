@@ -1,0 +1,13 @@
+#!/bin/sh
+# Lints and formats the staged files of each package, with that package's own tools. A package with nothing staged is
+# skipped, so its tools needn't be installed. Turned on by scripts/install-hooks.sh. Git runs hooks from the root.
+set -eu
+
+# js/: ESLint and Prettier through lint-staged (js/lint-staged.config.js), which keeps unstaged changes out of the fix
+if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- js/)" ]; then
+    # GUI git clients like Fork don't load the shell profile, so fnm's Node and Yarn aren't on their PATH
+    if command -v fnm >/dev/null 2>&1; then
+        eval "$(fnm env --shell bash)"
+    fi
+    (cd js && yarn lint-staged)
+fi

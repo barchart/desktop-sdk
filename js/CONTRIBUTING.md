@@ -1,6 +1,10 @@
-# Contributing
+# Contributing to the TypeScript SDK
+
+The repository's [CONTRIBUTING.md](../CONTRIBUTING.md) has what the whole repository shares: commit messages and the git hooks.
 
 ## Setup
+
+From `js/`:
 
 ```sh
 corepack enable      # once per machine: Yarn's version comes from packageManager in package.json
@@ -20,13 +24,11 @@ yarn docs:api
 
 `yarn check` (in CI too) runs it, and fails when a public item has no comment or a `{@link}` is broken; it names the item.
 
-Commit messages are [conventional commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `chore:`…; `feat!:` or a `BREAKING CHANGE:` footer for a breaking change). They set the next version and become the changelog, so write them for the SDK's users.
-
-The git hooks (`.husky/`) check that before each commit: the commit message with commitlint, and the staged files with ESLint and Prettier (`lint-staged.config.js`). They aren't installed by `yarn install`, since this repository runs no install scripts, its dependencies' included (`enableScripts: false` in `.yarnrc.yml`). `yarn build`, `yarn build:watch` and `yarn check` install them instead; `yarn hooks:install` does it on its own.
+Before each commit, the git hooks lint and format the staged files under `js/` with ESLint and Prettier (`lint-staged.config.js`). They aren't turned on by `yarn install`, since this package runs no install scripts, its dependencies' included (`enableScripts: false` in `.yarnrc.yml`). `yarn build`, `yarn build:watch` and `yarn check` turn them on instead; `yarn hooks:install` does it on its own.
 
 ## Working on the SDK inside an application
 
-To run your changes in an application, link this repository into it and keep a build running here:
+To run your changes in an application, link `js/` into it and keep a build running there:
 
 ```sh
 yarn build:watch   # rebuilds dist/ on every change, with source maps into src/
@@ -34,10 +36,10 @@ yarn build:watch   # rebuilds dist/ on every change, with source maps into src/
 
 Linking depends on the application's package manager:
 
-- **Yarn 2 or later:** run `yarn link <path to this repository>` in the application.
-- **npm:** run `npm link` here, then `npm link @barchart/desktop-sdk-js` in the application.
+- **Yarn 2 or later:** run `yarn link <path to js/>` in the application.
+- **npm:** run `npm link` in `js/`, then `npm link @barchart/desktop-sdk-js` in the application.
 
-**The application must use its own `@openfeed/sdk-js` and `long`.** A linked package resolves its imports from this repository's `node_modules`, which has its own copies (for the tests). Two copies mean two Openfeed clients and two sets of protocol types and enums. With Vite:
+**The application must use its own `@openfeed/sdk-js` and `long`.** A linked package resolves its imports from `js/node_modules`, which has its own copies (for the tests). Two copies mean two Openfeed clients and two sets of protocol types and enums. With Vite:
 
 ```ts
 resolve: { dedupe: ["@openfeed/sdk-js", "long"] },

@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Guidance for Claude Code (claude.ai/code) in this repository.
+Guidance for Claude Code (claude.ai/code) in `js/`, the TypeScript SDK. The repository's `CLAUDE.md` has what the whole repository shares: commits, the git hooks, the workflows and releasing.
 
 ## What this is
 
-`@barchart/desktop-sdk-js`: live market state on top of the Openfeed client, `@openfeed/sdk-js`. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Open source (see `LICENSE`), published to npm. Customers use it through the Barchart Desktop API.
+`@barchart/desktop-sdk-js`: live market state on top of the Openfeed client, `@openfeed/sdk-js`. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Open source (see `LICENSE`), published to npm.
 
 - `src/`: the SDK. `src/index.ts` is the only public entry; everything else is internal.
 - `test/`: Vitest. `test/helpers.ts` builds protocol messages; `desktop-sdk.test.ts` replaces the Openfeed client with a fake (`vi.mock`).
@@ -17,14 +17,14 @@ The npm package ships `dist/`, `docs/`, `examples/`, `llms.txt`, `README.md` and
 
 ## Debugging in an application
 
-`CONTRIBUTING.md`, "Working on the SDK inside an application": link the repo into the application and run `yarn build:watch` here. The application's bundler must resolve `@openfeed/sdk-js` and `long` to its own copies (Vite: `resolve.dedupe`), or there are two Openfeed clients and two copies of the protocol types. Keep `CONTRIBUTING.md` in step with the scripts and the commit rules.
+`CONTRIBUTING.md`, "Working on the SDK inside an application": link `js/` into the application and run `yarn build:watch` there. The application's bundler must resolve `@openfeed/sdk-js` and `long` to its own copies (Vite: `resolve.dedupe`), or there are two Openfeed clients and two copies of the protocol types. Keep `CONTRIBUTING.md` in step with the scripts and the commit rules.
 
 ## Commands
 
 ```shell
 corepack enable      # once per machine: Yarn's version comes from packageManager in package.json
 yarn install
-yarn hooks:install   # husky's git hooks (commitlint on commit-msg, lint-staged on pre-commit); build and build:watch run it first
+yarn hooks:install   # the repository's git hooks (../.githooks/); build and build:watch run it first
 yarn check           # everything CI runs: typecheck, lint, format:check, test, docs:api, build, check:package, check:esm
 yarn typecheck       # TypeScript 7 (`typescript-7` alias), noEmit
 yarn lint            # ESLint: every core rule and typescript-eslint strict, with types
@@ -34,19 +34,16 @@ yarn docs:api        # TypeDoc (on TypeScript 6): the TSDoc comments into docs/a
 yarn build           # TypeScript 7 (tsconfig.build.json): src/ into dist/, then tsc-alias adds .js to relative imports
 yarn build:watch     # the same on every change, with source and declaration maps into src/, for a linked package
 yarn check:esm       # loads the built package in Node, as a user would
-yarn commitlint --from main   # checks the branch's commit messages, as CI does on pull requests
 ```
 
 Yarn 4, with `nodeLinker: node-modules` (`.yarnrc.yml`). It holds back packages published less than a day ago (`npmMinimalAgeGate`), so pin a version that old when upgrading, except for `@openfeed/sdk-js` (see "Supply chain").
 
 ## Supply chain
 
-- **No install scripts:** `enableScripts: false` in `.yarnrc.yml`, so no dependency's `preinstall`/`install`/`postinstall` runs, and this package has none either (husky's hooks are installed by `yarn build` and `yarn build:watch`, through `yarn hooks:install`, not by `postinstall`). A dependency that truly needs its build script gets `dependenciesMeta: { "<name>": { "built": true } }` in `package.json`, as a reviewed exception.
+- **No install scripts:** `enableScripts: false` in `.yarnrc.yml`, so no dependency's `preinstall`/`install`/`postinstall` runs, and this package has none either (the git hooks are turned on by `yarn build` and `yarn build:watch`, through `yarn hooks:install`, not by `postinstall`). A dependency that truly needs its build script gets `dependenciesMeta: { "<name>": { "built": true } }` in `package.json`, as a reviewed exception.
 - **Pinned versions:** dev dependencies are exact versions, and `yarn install --immutable` in CI installs exactly `yarn.lock`.
 - **Age gate exception:** `@openfeed/sdk-js` skips the one-day wait (`npmPreapprovedPackages` in `.yarnrc.yml`). This is a deliberate decision and stays: it's our own package, released by us, so the SDK can pick up a new version the same day. Every other package, including the client's own dependencies, still waits.
-- **Workflows:** actions are pinned to commit SHAs, with the version in a comment; update the SHA and the comment together. Jobs get the fewest permissions they need, and checkouts don't keep the token (`persist-credentials: false`).
-- **Code owners** (`.github/CODEOWNERS`): changes to `.github/` (the workflows, and the owners file itself) and to `.yarnrc.yml` need a review from one of the owners.
-- **Build and publish are separate jobs** (`release.yml`): `build` installs, checks and packs `package.tgz` with read-only access and no secrets; `publish` downloads that tarball and runs only `npm stage publish package.tgz --ignore-scripts`, with no checkout and no install, so dependency code never runs next to the npm credentials.
+- **Code owners** guard `.yarnrc.yml`; the workflows, the publishing jobs and the rest of the code owners are the repository's (its `CLAUDE.md`).
 
 ## Toolchain
 
@@ -61,15 +58,11 @@ Yarn 4, with `nodeLinker: node-modules` (`.yarnrc.yml`). It holds back packages 
 
 - **The docs are for people using the SDK.** Keep `README.md`, `docs/`, `examples/` and `llms.txt` in step with changes to the public API or behavior. They describe how the SDK behaves and how to use it, plainly. Protocol details belong to Openfeed's documentation: link to it rather than restating it.
 - **Every public export and member has a TSDoc comment,** written for users: it's what they see on hover, and it becomes `docs/api/`. Use `@param`, `@returns`, `@throws` and, on the main methods, `@example`. Contributor notes go in `//` comments, which don't reach users. `yarn docs:api` checks them.
-- **Code comments say what the code does and why,** never its history.
 - **Names:** `get…` for lookups, `has…`/`is…` for predicates, `remove`/`clear` for removal, `try…` for an action that may not happen. `interface` for object shapes, `type` for unions and function types.
 - **Listeners are never called synchronously inside `subscribe`;** the first callback comes from the subscription loop. Callers rely on holding the handle first.
 - **One visible flow:** subscribing and closing go through the subscription loop; coalesced events through the delivery loop. No other deferrals, timers or microtasks.
 - **Every change** passes `yarn check`, with tests for new behavior.
-- **Commit messages are conventional commits** (`feat:`, `fix:`, `docs:`, `chore:`…; `feat!:` or a `BREAKING CHANGE:` footer for breaking changes). They set the next version and become the changelog, so write them for users. With squash merges, the PR title is the commit.
 
 ## Releasing
 
-release-please (`.github/workflows/release.yml`, `release-please-config.json`, `.release-please-manifest.json`) keeps a release PR open on `main`. It bumps `version` in `package.json` from the commits since the last release (`fix` a patch, `feat` a minor; before 1.0 a breaking change is a minor too) and adds them to `CHANGELOG.md`. Merging it tags the release and creates the GitHub release; the same workflow then builds and checks the tarball (`build`) and publishes it to npm (`publish`), public and with provenance (`publishConfig`). Don't bump `version` by hand.
-
-Publishing uses npm's trusted publishing: npm trusts this repository's `release.yml`, in the `npm` environment, through OIDC. There's no npm token anywhere, and the package refuses publishes with one. One people-gate, outside GitHub: the job only stages the version (`npm stage publish`; the trusted publisher allows staging, not `npm publish`), with no approval on the `npm` environment. It goes public once a maintainer approves the staged version on npmjs.com, or with `npm stage approve`, with 2FA.
+release-please, at the repository's root, bumps `version` in `package.json` and writes `CHANGELOG.md`, from the commits that touched `js/`; don't bump it by hand. The release is staged on npm, public and with provenance (`publishConfig`), and goes public once a maintainer approves it. The repository's `CLAUDE.md` has the details.
