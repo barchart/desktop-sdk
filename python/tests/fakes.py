@@ -27,11 +27,13 @@ class FakeClient:
         self.on_connected: Callable[[Any], None] = lambda _: None
         self.on_error: Callable[[Any], None] = lambda _: None
         self.sent: list[api.OpenfeedGatewayRequest] = []
+        self.started = threading.Event()
         self.stopped = threading.Event()
         FakeClient.instances.append(self)
 
     def start(self, *, blocking: bool) -> None:
         assert blocking
+        self.started.set()
         self.stopped.wait()
 
     def stop(self) -> None:
@@ -68,7 +70,10 @@ def flush(sdk: DesktopSdk) -> None:
 
 
 def get_client(index: int = -1) -> FakeClient:
-    wait_until(lambda: FakeClient.instances)
+    """The SDK's client, once started: the SDK sets its callbacks between creating and starting it, and a message fed to it
+    before then goes nowhere.
+    """
+    wait_until(lambda: FakeClient.instances and FakeClient.instances[index].started.is_set())
     return FakeClient.instances[index]
 
 
