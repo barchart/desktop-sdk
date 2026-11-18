@@ -10,6 +10,9 @@ resolution-markers = [
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1D"
 
+[options.exclude-newer-package]
+openfeed = false
+
 [[package]]
 name = "ast-serialize"
 version = "0.13.1"
@@ -94,7 +97,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "openfeed", git = "https://github.com/openfeed-org/sdk-python?rev=850a747a7b907ea3ff2be10e7d37e1ecd6927ad3" },
+    { name = "openfeed", specifier = ">=1.5.0" },
     { name = "protobuf", specifier = ">=6.33.3" },
     { name = "websocket-client", specifier = ">=1.9.2" },
 ]
@@ -313,10 +316,14 @@ wheels = [
 [[package]]
 name = "openfeed"
 version = "1.5.0"
-source = { git = "https://github.com/openfeed-org/sdk-python?rev=850a747a7b907ea3ff2be10e7d37e1ecd6927ad3#850a747a7b907ea3ff2be10e7d37e1ecd6927ad3" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "protobuf" },
     { name = "websocket-client" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/59/28/a66846d40feafd4a7ca5b9bdb0b0263577175fa849dea58e49a49de31d4c/openfeed-1.5.0.tar.gz", hash = "sha256:7c9104141d4158cef027122964366368b470836350d9e06de2312635a67358f1", size = 41920, upload-time = "2026-11-18T18:10:00.873Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/95/3aab7066cb68c5b019ae6b206bc2d98e2d5b007eddb166c42224da501a8b/openfeed-1.5.0-py3-none-any.whl", hash = "sha256:b6fae3ba3af516ba82329f477fafec82cd7ba3ad1f4f699f3abb78d79b5d5535", size = 44130, upload-time = "2026-11-18T18:09:59.424Z" },
 ]
 
 [[package]]

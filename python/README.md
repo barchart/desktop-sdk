@@ -72,4 +72,4 @@ uv sync                                 # the environment, with the dev tools
 sh scripts/check.sh                     # everything CI runs: lint, format, types, tests, API docs, build
 ```
 
-It depends on a specific commit of [`openfeed`](https://github.com/openfeed-org/sdk-python), named in `pyproject.toml`, because the release it needs isn't on PyPI yet. To move to a newer commit, change it there and run `uv lock`.
+It depends on [`openfeed`](https://github.com/openfeed-org/sdk-python) 1.5.0 or later, from PyPI. `uv.lock` pins the version the checks use; `uv lock --upgrade-package openfeed` moves it.

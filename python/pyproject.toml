@@ -7,10 +7,9 @@ license = "LicenseRef-Barchart"
 license-files = ["LICENSE"]
 requires-python = ">=3.11"
 keywords = ["openfeed", "market-data", "trading", "barchart"]
-# The first openfeed with the current protos and type stubs isn't on PyPI, so this names its commit. PyPI refuses packages with
-# direct references like this one: on publishing, change it to the released version.
+# 1.5.0 is the first openfeed with the current protos and type stubs
 dependencies = [
-    "openfeed @ git+https://github.com/openfeed-org/sdk-python@850a747a7b907ea3ff2be10e7d37e1ecd6927ad3",
+    "openfeed>=1.5.0",
     "protobuf>=6.33.3",
     "websocket-client>=1.9.2",
 ]
