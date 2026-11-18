@@ -11,7 +11,7 @@ Short programs, one task each. They connect to the Barchart Desktop API on `ws:/
 
 ## Running one
 
-From a clone of this repository, put your credentials in the example's `sdk.login(...)` call, then:
+In a clone of this repository, put your credentials in the example's `sdk.login(...)` call, then, from `js/`:
 
 ```shell
 yarn install
@@ -19,6 +19,6 @@ yarn build
 node examples/quotes.ts
 ```
 
-Node 22.18 or later runs TypeScript files directly. The examples import `@barchart/desktop-sdk-js`, which Node resolves to this repository's own build in `dist/`, so build again after changing `src/`, or keep `yarn build:watch` running.
+Node 22.18 or later runs TypeScript files directly. The examples import `@barchart/desktop-sdk-js`, which Node resolves to the package's own build in `js/dist/`, so build again after changing `src/`, or keep `yarn build:watch` running.
 
 The [reference](../docs/reference.md) has every method and shape they use.
