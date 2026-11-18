@@ -2,19 +2,17 @@
 
 Live quotes, order books and cumulative volume from [Openfeed](https://docs.barchart.com/openfeed), kept up to date for you. The Python port of [`@barchart/desktop-sdk-js`](https://github.com/barchart/desktop-sdk/tree/main/js), which is the reference implementation: its [reference](https://github.com/barchart/desktop-sdk/blob/main/js/docs/reference.md) and [design](https://github.com/barchart/desktop-sdk/blob/main/js/docs/design.md) describe what this package does.
 
-> **Early release.** The API follows the TypeScript SDK, and it isn't on PyPI yet.
+> **Early release.** The API follows the TypeScript SDK.
 
 ## Installing
 
-Python 3.11 or later. Install it from this repository:
+Python 3.11 or later:
 
 ```shell
-pip install "git+https://github.com/barchart/desktop-sdk#subdirectory=python"
+pip install barchart-desktop-sdk
 # or
-uv add "git+https://github.com/barchart/desktop-sdk#subdirectory=python"
+uv add barchart-desktop-sdk
 ```
-
-To pin a version in an application, put its release tag before the `#`: `"git+https://github.com/barchart/desktop-sdk@python-v0.1.0#subdirectory=python"`.
 
 ## Quick start
 
@@ -44,7 +42,7 @@ Not every Openfeed server sends volume at price: on one that doesn't, the subscr
 
 A failed lookup raises: `raw.lookup_instruments` gives an `InstrumentLookupError` when the server refuses it or finds nothing.
 
-More in [`examples/`](examples/). Every class, method and field has a docstring: your editor shows it on hover, `help(DesktopSdk.subscribe_quote)` prints it, and the installed package has them all as Markdown in `barchart_desktop_sdk/docs/api/`. The [TypeScript SDK's reference](https://github.com/barchart/desktop-sdk/blob/main/js/docs/reference.md) describes the same methods and the delivery guarantees, under the names below.
+More in [`examples/`](https://github.com/barchart/desktop-sdk/tree/main/python/examples). Every class, method and field has a docstring: your editor shows it on hover, `help(DesktopSdk.subscribe_quote)` prints it, and the installed package has them all as Markdown in `barchart_desktop_sdk/docs/api/`. The [TypeScript SDK's reference](https://github.com/barchart/desktop-sdk/blob/main/js/docs/reference.md) describes the same methods and the delivery guarantees, under the names below.
 
 ## Names
 
@@ -65,7 +63,7 @@ In `asyncio`, await the futures the SDK returns (`when_connected`, `raw.request_
 
 ## Development
 
-[uv](https://docs.astral.sh/uv/) manages the Python version, the environment and the lockfile; [CONTRIBUTING.md](CONTRIBUTING.md) has the rest.
+[uv](https://docs.astral.sh/uv/) manages the Python version, the environment and the lockfile; [CONTRIBUTING.md](https://github.com/barchart/desktop-sdk/blob/main/python/CONTRIBUTING.md) has the rest.
 
 ```shell
 uv sync                                 # the environment, with the dev tools

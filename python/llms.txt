@@ -2,7 +2,7 @@
 
 > Live market state from an Openfeed connection, for Python. The SDK subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument, calling you when they change. It connects to the Barchart Desktop API (ws://localhost:9000, with Barchart Desktop's credentials) or to an Openfeed gateway. It's the Python port of `@barchart/desktop-sdk-js`.
 
-- Early release, not on PyPI. Python 3.11 or later. Install it from GitHub: `pip install "git+https://github.com/barchart/desktop-sdk#subdirectory=python"` or `uv add "git+https://github.com/barchart/desktop-sdk#subdirectory=python"`. It brings the `openfeed` client it needs with it.
+- Early release. Python 3.11 or later. Install it from PyPI: `pip install barchart-desktop-sdk` or `uv add barchart-desktop-sdk`. It brings the `openfeed` client it needs with it.
 - Create one `DesktopSdk` for the application's lifetime, or use `with DesktopSdk() as sdk:`, and `login(Credentials(url=..., username=..., password=...))`. `logout()` keeps subscriptions; `dispose()` ends everything.
 - `subscribe_quote`, `subscribe_depth` and `subscribe_cumulative_volume` take a symbol and a `Listener(on_event=..., on_error=..., on_message=...)`, and return a `Subscription`. Call `close()` on it when done.
 - Always pass `on_error`: nothing else calls you when the server refuses a subscription, such as one without permission. It gets a `SubscriptionError`: log it, and decide in code on its `result`.
