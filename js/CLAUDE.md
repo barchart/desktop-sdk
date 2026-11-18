@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Guidance for Claude Code (claude.ai/code) in `js/`, the TypeScript SDK. The repository's `CLAUDE.md` has what the whole repository shares: commits, the git hooks, the workflows and releasing.
+Guidance for Claude Code (claude.ai/code) in `js/`, the TypeScript SDK. The repository's `CLAUDE.md` has what the SDKs share: keeping them in step, commits, the workflows and releasing.
 
 ## What this is
 
-`@barchart/desktop-sdk-js`: live market state on top of the Openfeed client, `@openfeed/sdk-js`. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Open source (see `LICENSE`), published to npm.
+`@barchart/desktop-sdk-js`: live market state on top of the Openfeed client, `@openfeed/sdk-js`. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Published to npm.
 
 - `src/`: the SDK. `src/index.ts` is the only public entry; everything else is internal.
 - `test/`: Vitest. `test/helpers.ts` builds protocol messages; `desktop-sdk.test.ts` replaces the Openfeed client with a fake (`vi.mock`).
@@ -12,6 +12,7 @@ Guidance for Claude Code (claude.ai/code) in `js/`, the TypeScript SDK. The repo
 - `examples/`: short programs, one task each. They import `@barchart/desktop-sdk-js`, which `tsconfig.json`'s `paths` points at `src/`, so `yarn typecheck` checks them against the current API. They aren't run.
 - `llms.txt`: the summary and links that AI assistants read ([llmstxt.org](https://llmstxt.org/)).
 - `CHANGELOG.md`: written by release-please; don't edit it by hand.
+- `LICENSE`: a copy of the repository's, for the package.
 
 The npm package ships `dist/`, `docs/`, `examples/`, `llms.txt`, `README.md` and `LICENSE`, so an assistant in a user's project finds the docs in `node_modules`. It has no maps, since it has no `src/` for them to point at.
 

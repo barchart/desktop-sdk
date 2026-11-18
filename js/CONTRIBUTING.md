@@ -1,6 +1,6 @@
 # Contributing to the TypeScript SDK
 
-The repository's [CONTRIBUTING.md](../CONTRIBUTING.md) has what the whole repository shares: commit messages and the git hooks.
+The repository's [CONTRIBUTING.md](../CONTRIBUTING.md) has what both SDKs share: commit messages and the git hooks.
 
 ## Setup
 
