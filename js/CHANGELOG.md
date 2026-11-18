@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/barchart/desktop-sdk/compare/js-v0.3.0...js-v0.3.1) (2026-11-18)
+
+
+### Bug Fixes
+
+* **js:** bump openfeed sdk version ([44de2f2](https://github.com/barchart/desktop-sdk/commit/44de2f2d9fbbfbe222c5b6f161c748f84f0af2ce))
+
 ## [0.3.0](https://github.com/barchart/desktop-sdk-js/compare/v0.2.2...v0.3.0) (2026-11-12)
 
 
