@@ -69,4 +69,4 @@ Threaded tests pass by luck easily. Tests wait with `flush` and `wait_until` rat
 
 ## Releasing
 
-release-please, at the repository's root, bumps `version` in `pyproject.toml`, and the project's own entry in `uv.lock`, and writes `CHANGELOG.md`, from the commits that touched `python/`; don't bump it by hand. A release's wheel and sdist are attached to its GitHub release; publishing to PyPI is off until it's switched on. The repository's `CLAUDE.md` has the details, and the steps to switch it on.
+release-please, at the repository's root, bumps `version` in `pyproject.toml`, and the project's own entry in `uv.lock`, and writes `CHANGELOG.md`, from the commits that touched `python/`; don't bump it by hand. A release's wheel and sdist are attached to its GitHub release and published to PyPI once a reviewer approves it. The repository's `CLAUDE.md` has the details.
