@@ -14,22 +14,22 @@
 
 ## Docs
 
-- [README](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/README.md): the introduction, with installing, connecting, subscribing, reading state and formatting.
-- [Reference](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/docs/reference.md): every public method, how it behaves, and the delivery guarantees.
+- [README](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/README.md): the introduction, with installing, connecting, subscribing, reading state and formatting.
+- [Reference](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/docs/reference.md): every public method, how it behaves, and the delivery guarantees.
 - API reference: every type, field and parameter, generated from the code, one page each. It's in the installed package, not in the repository: `node_modules/@barchart/desktop-sdk-js/docs/api/README.md`. The same descriptions are in the type declarations, `node_modules/@barchart/desktop-sdk-js/dist/*.d.ts`.
 
 ## Examples
 
-- [Quotes](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/examples/quotes.ts): a quote's last price and best bid and offer, as they change.
-- [Order book](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/examples/order-book.ts): the order book, rendered on each change.
-- [Cumulative volume](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/examples/cumulative-volume.ts): a volume-at-price table kept from the changed levels.
-- [Coalescing](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/examples/coalescing.ts): at most one event per subscription per interval, on a busy feed.
-- [Connection](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/examples/connection.ts): logging in and out, rejected credentials, heartbeats, disposing.
-- [Raw access](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/examples/raw-access.ts): raw subscriptions, one-off snapshots and instrument lookups.
+- [Quotes](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/examples/quotes.ts): a quote's last price and best bid and offer, as they change.
+- [Order book](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/examples/order-book.ts): the order book, rendered on each change.
+- [Cumulative volume](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/examples/cumulative-volume.ts): a volume-at-price table kept from the changed levels.
+- [Coalescing](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/examples/coalescing.ts): at most one event per subscription per interval, on a busy feed.
+- [Connection](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/examples/connection.ts): logging in and out, rejected credentials, heartbeats, disposing.
+- [Raw access](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/examples/raw-access.ts): raw subscriptions, one-off snapshots and instrument lookups.
 
 ## Optional
 
-- [Design](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/docs/design.md): how the SDK works inside, for contributors and ports to other languages.
+- [Design](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/docs/design.md): how the SDK works inside, for contributors and ports to other languages.
 - [Openfeed](https://openfeed.com/): the protocol, its services and messages.
 - [Openfeed client](https://github.com/openfeed-org/sdk-js): `@openfeed/sdk-js`, which the SDK runs on.
-- [Changelog](https://raw.githubusercontent.com/barchart/desktop-sdk-js/main/js/CHANGELOG.md): what changed in each release.
+- [Changelog](https://raw.githubusercontent.com/barchart/desktop-sdk/main/js/CHANGELOG.md): what changed in each release.
