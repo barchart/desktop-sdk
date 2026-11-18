@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.egg-info/
+dist/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.vscode/
+
+# generated from the docstrings before building; see CLAUDE.md
+src/barchart_desktop_sdk/docs/api/

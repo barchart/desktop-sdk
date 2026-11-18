@@ -4,37 +4,54 @@ Guidance for Claude Code (claude.ai/code) in this repository.
 
 ## What this is
 
-The Barchart Desktop SDK: live market state on top of an Openfeed client. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Open source (see `js/LICENSE`). Customers use it through the Barchart Desktop API.
+The Barchart Desktop SDK: live market state on top of an Openfeed client. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Open source (see `LICENSE`). Customers use it through the Barchart Desktop API. One SDK per language, each in its own folder, released on its own:
 
 - `js/`: `@barchart/desktop-sdk-js`, TypeScript, on npm, on top of `@openfeed/sdk-js`. `js/CLAUDE.md` has its details.
+- `python/`: `barchart-desktop-sdk`, Python, on PyPI once `openfeed` is, on top of `openfeed`. `python/CLAUDE.md` has its details.
 
-At the root: what the repository shares. `.github/` (CI, releases, code owners), `.githooks/` and `scripts/` (the git hooks and the commit check), and the release-please config.
+At the root: what both share. `.github/` (CI, releases, code owners), `.githooks/` and `scripts/` (the git hooks and the commit check), the release-please config, and `LICENSE`, which each package ships a copy of (CI checks they're the same).
+
+The Openfeed clients are separate repositories, and not part of this one.
+
+## One SDK, several languages
+
+The SDKs behave the same: the same events, state, connection handling, errors and public API, each in its own language's style. A change to what users see goes into every SDK in the same pull request, each with its test. If one can't follow yet, say so in the pull request and leave a note for it.
+
+`js/` is the reference: `js/docs/reference.md` describes the behavior and the delivery guarantees, and `js/docs/design.md` the internals, for contributors and ports. `python/CLAUDE.md` says how its names and threads map onto them.
 
 ## Commands
 
+Each package has its own toolchain, run from its folder:
+
 ```shell
 cd js && yarn install && yarn check              # everything CI runs for TypeScript; see js/CLAUDE.md
+cd python && uv sync && sh scripts/check.sh      # everything CI runs for Python; see python/CLAUDE.md
 python3 scripts/check_commits.py --range origin/main..HEAD   # the branch's commit messages, as CI checks a pull request
 ```
 
-`yarn check` and `yarn build` turn on the git hooks (`sh scripts/install-hooks.sh`: `git config core.hooksPath .githooks`). The package runs no install scripts, so `yarn install` doesn't. `commit-msg` checks the message with `scripts/check_commits.py` (Python's standard library only, commitlint's conventional rules). `pre-commit` lints and formats the staged files of each package with its own tools, and skips a package with nothing staged.
+Either package's check, and `yarn build`, turn on the git hooks (`sh scripts/install-hooks.sh`: `git config core.hooksPath .githooks`). Neither package runs install scripts, so `yarn install` and `uv sync` don't. `commit-msg` checks the message with `scripts/check_commits.py` (Python's standard library only, commitlint's conventional rules). `pre-commit` lints and formats the staged files of each package with its own tools, and skips a package with nothing staged, so a contributor to one needn't install the other.
 
 ## Supply chain
 
-The package's dependencies are pinned and held back a day (`js/.yarnrc.yml`), except our own Openfeed client; `js/CLAUDE.md` has the details. For the repository:
+Each package's dependencies are pinned and held back a day (`js/.yarnrc.yml`, `python/uv.toml`), except our own Openfeed client in each; the package's `CLAUDE.md` has the details. For the repository:
 
-- **Workflows:** actions are pinned to commit SHAs, with the version in a comment; update the SHA and the comment together. Jobs get the fewest permissions they need, and checkouts don't keep the token (`persist-credentials: false`).
-- **Code owners** (`.github/CODEOWNERS`): changes to `.github/` (the workflows, and the owners file itself), `.githooks/`, `scripts/` and `js/.yarnrc.yml` need a review from one of the owners.
-- **Build and publish are separate jobs** (`release.yml`): `build` installs, checks and packs `package.tgz` with read-only access and no secrets; `publish` downloads that tarball and runs only `npm stage publish package.tgz --ignore-scripts`, with no checkout and no install, so dependency code never runs next to the npm credentials.
+- **Workflows:** actions are pinned to commit SHAs, with the version in a comment; update the SHA and the comment together. Jobs get the fewest permissions they need, checkouts don't keep the token (`persist-credentials: false`), and nothing is cached, since a pull request could fill a cache for `main`.
+- **Code owners** (`.github/CODEOWNERS`): changes to `.github/` (the workflows, and the owners file itself), `.githooks/`, `scripts/`, `js/.yarnrc.yml` and `python/uv.toml` need a review from one of the owners.
+- **Building and publishing are separate jobs** (`release.yml`): the build jobs install, check and build with read-only access and no secrets; the publish and attach jobs only download what was built, with no checkout and no install, so dependency code never runs next to write access or a registry's credentials.
 
 ## Rules
 
 - **Code comments say what the code does and why,** never its history.
 - **Every change** passes its package's check, with tests for new behavior.
-- **Commit messages are conventional commits** (`feat:`, `fix:`, `docs:`, `chore:`…; `feat!:` or a `BREAKING CHANGE:` footer for breaking changes). They set the next version of the package whose folder they touch, and become its changelog, so write them for users. With squash merges, the PR title is the commit.
+- **Commit messages are conventional commits** (`feat:`, `fix:`, `docs:`, `chore:`…; `feat!:` or a `BREAKING CHANGE:` footer for breaking changes). They set the next version of each package whose folder they touch, and become its changelog, so write them for users. A commit touching both packages releases both, so keep a change to one package out of a commit for the other. Scope a package's commits with its folder (`fix(js): …`, `feat(python): …`), and leave repository-wide ones unscoped (`ci: …`); release-please goes by the files a commit touches, so the scope is for readers. With squash merges, the PR title is the commit.
 
 ## Releasing
 
-release-please (`.github/workflows/release.yml`, `release-please-config.json`, `.release-please-manifest.json`) keeps a release PR open on `main`. It bumps `version` in `js/package.json` from the commits that touched `js/` since the last release (`fix` a patch, `feat` a minor; before 1.0 a breaking change is a minor too) and adds them to `js/CHANGELOG.md`. Merging it tags the release and creates the GitHub release; the same workflow then builds and checks the tarball (`build`) and publishes it to npm (`publish`), public and with provenance (`publishConfig`). Don't bump `version` by hand, and don't edit `CHANGELOG.md`.
+release-please (`.github/workflows/release.yml`, `release-please-config.json`, `.release-please-manifest.json`) keeps a release PR open on `main` for the packages with releasable commits since their last release. It bumps each package's version from the commits that touched its folder (`fix` a patch, `feat` a minor; before 1.0 a breaking change is a minor too), and adds them to the package's `CHANGELOG.md`. Merging it tags each release (`js-v0.4.0`, `python-v0.1.0`) and creates its GitHub release; the same workflow then builds and publishes it. Don't bump versions by hand, and don't edit a `CHANGELOG.md`.
 
-Publishing uses npm's trusted publishing: npm trusts this repository's `release.yml`, in the `npm` environment, through OIDC. There's no npm token anywhere, and the package refuses publishes with one. One people-gate, outside GitHub: the job only stages the version (`npm stage publish`; the trusted publisher allows staging, not `npm publish`), with no approval on the `npm` environment. It goes public once a maintainer approves the staged version on npmjs.com, or with `npm stage approve`, with 2FA.
+- **`js/`, on npm:** trusted publishing through OIDC, in the `npm` environment; there's no npm token anywhere, and the package refuses publishes with one. The job only stages the version (`npm stage publish`; the trusted publisher allows staging, not `npm publish`), with no approval on the `npm` environment. It goes public once a maintainer approves the staged version on npmjs.com, or with `npm stage approve`, with 2FA.
+- **`python/`, on PyPI, once switched on:** the wheel and sdist are attached to the GitHub release. PyPI refuses a package with a direct reference, which `openfeed` is until it's released there (`python/CLAUDE.md`, "Openfeed client"), so the publish job runs only when the repository variable `PUBLISH_TO_PYPI` is `true`. Until then, a release is installed from its tag: `pip install "git+https://github.com/barchart/desktop-sdk@python-v0.1.0#subdirectory=python"`. To switch it on:
+    1. Release `openfeed` to PyPI, and change the dependency in `python/pyproject.toml` to that version.
+    2. On PyPI, add this repository's `release.yml` as a trusted publisher of `barchart-desktop-sdk`, in the environment `pypi`. There's no token anywhere.
+    3. On GitHub, create the environment `pypi` with required reviewers: they approve each release, the one manual step.
+    4. Set the repository variable `PUBLISH_TO_PYPI` to `true`.

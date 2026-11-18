@@ -1,7 +1,8 @@
 name: CI
 
 # Read-only, with no secrets: pull requests run code nobody has reviewed yet. Actions are pinned to commit SHAs (a tag
-# can be moved to other code); the comment names the version.
+# can be moved to other code); the comment names the version. Both SDKs are checked on every change: each takes a few
+# minutes, and a required check that a path filter skips never reports.
 on:
     pull_request:
     push:
@@ -11,14 +12,14 @@ permissions:
     contents: read
 
 jobs:
-    check:
+    js:
         runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: js
         strategy:
             matrix:
                 node: [22, 24]
+        defaults:
+            run:
+                working-directory: js
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
@@ -33,14 +34,39 @@ jobs:
             # typecheck, lint, format, tests, build, and the package's exports and types (publint, attw)
             - run: yarn check
 
-    commits:
-        if: github.event_name == 'pull_request'
+    python:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                # the oldest Python requires-python allows, and the newest
+                python: ["3.11", "3.14"]
+        defaults:
+            run:
+                working-directory: python
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            # an exact uv; no cache, which a pull request could fill for main's runs
+            - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+              with:
+                  version: "0.13.6"
+                  python-version: ${{ matrix.python }}
+                  enable-cache: false
+            # exactly uv.lock (--locked fails if it's out of step with pyproject.toml)
+            - run: uv sync --locked
+            # lint, format, types, tests, the API reference, and the wheel and sdist
+            - run: sh scripts/check.sh
+
+    repository:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
               with:
                   fetch-depth: 0
                   persist-credentials: false
-            # the PR's commits are conventional commits (scripts/check_commits.py), for release-please; the script needs
-            # only the runner's Python
-            - run: python3 scripts/check_commits.py --range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+            # each package ships its own copy of the license
+            - run: cmp LICENSE js/LICENSE && cmp LICENSE python/LICENSE
+            # the PR's commits are conventional commits, for release-please; the script needs only the runner's Python
+            - if: github.event_name == 'pull_request'
+              run: python3 scripts/check_commits.py --range ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}

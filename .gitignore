@@ -1,2 +1,4 @@
 .vscode/
 .DS_Store
+# the repository's scripts, run with python3
+__pycache__/

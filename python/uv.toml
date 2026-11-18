@@ -1,0 +1,7 @@
+# uv's settings for this repository, apart from pyproject.toml so that code owners can guard them (.github/CODEOWNERS).
+
+# holds back packages published less than a day ago
+exclude-newer = "1 day"
+# except openfeed: it's our own client, released by us, so the SDK can pick up a new version the same day. Its own
+# dependencies still wait.
+exclude-newer-package = { openfeed = false }

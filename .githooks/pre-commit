@@ -11,3 +11,32 @@ if [ -n "$(git diff --cached --name-only --diff-filter=ACMR -- js/)" ]; then
     fi
     (cd js && yarn lint-staged)
 fi
+
+# python/: ruff's lint and format, fixed and staged again, unless a file also has unstaged changes; staging the fix would
+# stage those too, so for such a file only its staged version is checked
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- 'python/*.py')
+[ -z "$staged" ] && exit 0
+unstaged=$(git diff --name-only -- 'python/*.py')
+
+fix=""
+check=""
+for file in $staged; do
+    if printf '%s\n' "$unstaged" | grep -qxF "$file"; then
+        check="$check ${file#python/}"
+    else
+        fix="$fix ${file#python/}"
+    fi
+done
+
+cd python
+# shellcheck disable=SC2086 # one file per word; the repository's paths have no spaces
+if [ -n "$fix" ]; then
+    uv run --locked ruff check --fix $fix
+    uv run --locked ruff format $fix
+    git add $fix
+fi
+# what's staged of each, not the file on disk, which has the unstaged changes too
+for file in $check; do
+    git show ":python/$file" | uv run --locked ruff check --stdin-filename "$file" -
+    git show ":python/$file" | uv run --locked ruff format --check --stdin-filename "$file" -
+done
