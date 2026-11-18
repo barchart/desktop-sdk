@@ -1,11 +1,25 @@
 {
     "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+    "bump-minor-pre-major": true,
+    "include-component-in-tag": true,
     "packages": {
         "js": {
             "release-type": "node",
+            "component": "js",
+            "initial-version": "0.1.0"
+        },
+        "python": {
+            "release-type": "python",
+            "component": "python",
+            "package-name": "barchart-desktop-sdk",
             "initial-version": "0.1.0",
-            "bump-minor-pre-major": true,
-            "include-component-in-tag": false
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "uv.lock",
+                    "jsonpath": "$.package[?(@.name.value=='barchart-desktop-sdk')].version"
+                }
+            ]
         }
     }
 }

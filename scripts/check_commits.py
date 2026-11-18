@@ -7,8 +7,11 @@ commitlint skips them.
     python3 scripts/check_commits.py --file .git/COMMIT_EDITMSG     # one message (the commit-msg hook)
     python3 scripts/check_commits.py --range origin/main..HEAD      # every commit in a range (CI, on a pull request)
 
-It needs only Python's standard library, so it runs with any Python 3.11 or later, without installing anything.
+It needs only Python's standard library, so it runs with any Python 3.11 or later, without installing anything. The Python
+SDK's checks lint and test it (python/scripts/check.sh, python/tests/test_check_commits.py).
 """
+
+# ruff: noqa: T201, INP001 - it reports on stderr, and isn't a package
 
 from __future__ import annotations
 

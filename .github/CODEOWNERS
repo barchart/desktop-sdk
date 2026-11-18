@@ -1,10 +1,12 @@
 # Changes to these need a review from one of their owners (with "Require review from Code Owners" on main's ruleset).
 #
-# .github/: the workflows decide what runs in CI and what can publish to npm; this file is here too, so changing the
-# owners needs the owners' review.
+# .github/: the workflows decide what runs in CI and what can publish to npm and PyPI; this file is here too, so changing
+# the owners needs the owners' review.
 # .githooks/ and scripts/: the git hooks and what they run, on every contributor's machine.
 # js/.yarnrc.yml: it keeps dependencies' install scripts off, and holds the age gate's one exception.
-/.github/ @maximovicd @marenac4
-/.githooks/ @maximovicd @marenac4
-/scripts/ @maximovicd @marenac4
+# python/uv.toml: the age gate on new packages, and its one exception.
+/.github/ @maximovicd @marenac4 @mvberg
+/.githooks/ @maximovicd @marenac4 @mvberg
+/scripts/ @maximovicd @marenac4 @mvberg
 /js/.yarnrc.yml @maximovicd @marenac4
+/python/uv.toml @maximovicd @marenac4 @mvberg
