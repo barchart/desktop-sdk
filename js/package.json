@@ -5,11 +5,11 @@
     "license": "SEE LICENSE IN LICENSE",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/barchart/desktop-sdk-js.git",
+        "url": "git+https://github.com/barchart/desktop-sdk.git",
         "directory": "js"
     },
-    "homepage": "https://github.com/barchart/desktop-sdk-js#readme",
-    "bugs": "https://github.com/barchart/desktop-sdk-js/issues",
+    "homepage": "https://github.com/barchart/desktop-sdk/tree/main/js#readme",
+    "bugs": "https://github.com/barchart/desktop-sdk/issues",
     "keywords": [
         "openfeed",
         "market-data",
