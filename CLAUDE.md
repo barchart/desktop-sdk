@@ -7,7 +7,7 @@ Guidance for Claude Code (claude.ai/code) in this repository.
 The Barchart Desktop SDK: live market state on top of an Openfeed client. It subscribes, applies snapshots and updates, and keeps quotes, order books and cumulative volume per instrument. Open source (see `LICENSE`). Customers use it through the Barchart Desktop API. One SDK per language, each in its own folder, released on its own:
 
 - `js/`: `@barchart/desktop-sdk-js`, TypeScript, on npm, on top of `@openfeed/sdk-js`. `js/CLAUDE.md` has its details.
-- `python/`: `barchart-desktop-sdk`, Python, on PyPI once switched on, on top of `openfeed`. `python/CLAUDE.md` has its details.
+- `python/`: `barchart-desktop-sdk`, Python, on PyPI, on top of `openfeed`. `python/CLAUDE.md` has its details.
 
 At the root: what both share. `.github/` (CI, releases, code owners), `.githooks/` and `scripts/` (the git hooks and the commit check), the release-please config, and `LICENSE`, which each package ships a copy of (CI checks they're the same).
 
@@ -50,7 +50,4 @@ Each package's dependencies are pinned and held back a day (`js/.yarnrc.yml`, `p
 release-please (`.github/workflows/release.yml`, `release-please-config.json`, `.release-please-manifest.json`) keeps a release PR open on `main` for the packages with releasable commits since their last release. It bumps each package's version from the commits that touched its folder (`fix` a patch, `feat` a minor; before 1.0 a breaking change is a minor too), and adds them to the package's `CHANGELOG.md`. Merging it tags each release (`js-v0.4.0`, `python-v0.1.0`) and creates its GitHub release; the same workflow then builds and publishes it. Don't bump versions by hand, and don't edit a `CHANGELOG.md`.
 
 - **`js/`, on npm:** trusted publishing through OIDC, in the `npm` environment; there's no npm token anywhere, and the package refuses publishes with one. The job only stages the version (`npm stage publish`; the trusted publisher allows staging, not `npm publish`), with no approval on the `npm` environment. It goes public once a maintainer approves the staged version on npmjs.com, or with `npm stage approve`, with 2FA.
-- **`python/`, on PyPI, once switched on:** the wheel and sdist are attached to the GitHub release. The publish job runs only when the repository variable `PUBLISH_TO_PYPI` is `true`, since it fails until PyPI trusts this workflow. Until then, a release is installed from its tag: `pip install "git+https://github.com/barchart/desktop-sdk@python-v0.1.0#subdirectory=python"`. To switch it on:
-    1. On PyPI, add this repository's `release.yml` as a trusted publisher of `barchart-desktop-sdk`, in the environment `pypi`. There's no token anywhere.
-    2. On GitHub, create the environment `pypi` with required reviewers: they approve each release, the one manual step.
-    3. Set the repository variable `PUBLISH_TO_PYPI` to `true`.
+- **`python/`, on PyPI:** the wheel and sdist are attached to the GitHub release, then published to PyPI through trusted publishing (OIDC), in the `pypi` environment; there's no PyPI token anywhere. PyPI's trusted publisher for `barchart-desktop-sdk` names this repository, `release.yml` and the environment `pypi`, so renaming any of them needs it updated too. The environment's required reviewers approve each release, the one manual step.
