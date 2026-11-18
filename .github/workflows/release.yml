@@ -13,9 +13,8 @@ name: Release
 # `npm stage approve`) with 2FA. That's the one manual step, kept outside GitHub so that a compromised repository can't
 # release anything. npm's trusted publisher for this package allows staging only.
 #
-# python/: PyPI refuses a package with a direct reference, which openfeed is until it's released there
-# (python/pyproject.toml), so publishing is off until the repository variable PUBLISH_TO_PYPI is "true". Until then a
-# release is its tag and the files attached to it. Once on: PyPI trusts this workflow through OIDC (trusted publishing,
+# python/: publishing is off until the repository variable PUBLISH_TO_PYPI is "true", set once PyPI trusts this
+# workflow (CLAUDE.md, "Releasing"). Until then a release is its tag and the files attached to it. Once on: PyPI trusts this workflow through OIDC (trusted publishing,
 # no token), in the `pypi` environment, whose required reviewers are the one manual step.
 #
 # Actions are pinned to commit SHAs (a tag can be moved to other code); the comment names the version.

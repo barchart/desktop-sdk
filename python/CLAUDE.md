@@ -51,7 +51,7 @@ Bringing a change over from the TypeScript SDK: names in snake_case (`last_size`
 
 ## Openfeed client
 
-The SDK needs `openfeed` from a commit newer than its latest PyPI release (1.4.0), for its current protos and type stubs. `dependencies` in `pyproject.toml` names that commit, which works for `pip` and `uv` alike and from a git URL. To move it, change the commit and run `uv lock`. PyPI refuses packages with direct references like this, so publishing there needs `openfeed` released first, and the dependency changed to that version.
+The SDK needs `openfeed` 1.5.0 or later, the first release with its current protos and type stubs. `uv.lock` pins the version the checks run against; `uv lock --upgrade-package openfeed` moves it. `openfeed` skips the one-day hold-back (`uv.toml`): it's our own client, so the SDK can pick up a new release the same day. A change that needs something newer raises the lower bound in `pyproject.toml`.
 
 `openfeed.generated` is fully typed, but the client class isn't: mypy doesn't check calls into it (`untyped_calls_exclude`), so `tests/test_live.py` runs them against a real local socket. `_connection.py` is the only module that touches the client, and adds what it doesn't do: reconnecting with backoff, re-subscribing, the silent connection check, unsubscribing (once the server has answered the subscription, so the unsubscribe can't overtake it), lookups and message metadata. It doesn't use the client's own subscription API, which has no unsubscribe.
 
