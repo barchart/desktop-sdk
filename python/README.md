@@ -14,7 +14,7 @@ pip install "git+https://github.com/barchart/desktop-sdk#subdirectory=python"
 uv add "git+https://github.com/barchart/desktop-sdk#subdirectory=python"
 ```
 
-To pin a version in an application, add `@<commit>` to the URL.
+To pin a version in an application, put its release tag before the `#`: `"git+https://github.com/barchart/desktop-sdk@python-v0.1.0#subdirectory=python"`.
 
 ## Quick start
 
