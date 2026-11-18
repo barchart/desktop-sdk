@@ -11,7 +11,7 @@ Short programs, one task each. They connect to the Barchart Desktop API on `ws:/
 
 ## Running one
 
-From a clone of this repository, put your credentials in the example's `sdk.login(...)` call, then:
+In a clone of this repository, put your credentials in the example's `sdk.login(...)` call, then, from `python/`:
 
 ```shell
 uv sync
