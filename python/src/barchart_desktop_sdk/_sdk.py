@@ -24,7 +24,7 @@ from collections.abc import Callable
 from concurrent.futures import Future
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Literal, Self, TypeVar, cast
+from typing import TYPE_CHECKING, Literal, Self, cast
 
 from openfeed.generated import openfeed_api_pb2, openfeed_instrument_pb2, openfeed_pb2
 
@@ -33,7 +33,7 @@ from ._formatted import FormattedQuote
 from ._proto import to_time
 from ._registry import Registry, get_message_market_id, get_wire_labels
 from ._store import CumulativeVolumePart, InstrumentChange, InstrumentStore, LastMessages, PriceVolume, StateParts
-from ._subscriber import Entry, EntryKey, Event, Method, Subscriber, Subscription, get_message_subscribers, get_subscriber_error
+from ._subscriber import CallGuard, Entry, EntryKey, Event, Method, Subscriber, Subscription, get_message_subscribers, get_subscriber_error
 from ._types import (
     BookEvent,
     ConnectionState,
@@ -58,7 +58,6 @@ if TYPE_CHECKING:
     from ._quote import QuoteRecord
     from ._types import Service, SubscriptionType
 
-_T = TypeVar("_T")
 _Call = Callable[[], None]
 _MessageListener = Callable[[openfeed_api_pb2.OpenfeedGatewayMessage, MessageMetadata], None]
 
@@ -82,6 +81,17 @@ class _Work:
 
     call: _Call
     kept: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _Registered:
+    """A listener added with an `on_…` method, and the guard that stops its calls, queued ones too, once it's removed."""
+
+    listener: Callable[..., None]
+    guard: CallGuard
+
+    def bind(self, *args: object) -> _Call:
+        return partial(self.guard.run, partial(self.listener, *args))
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,7 +194,7 @@ class RawAccess:
             listener: Called with each message and what the Openfeed client knows about it.
 
         Returns:
-            A function that removes the listener.
+            A function that removes the listener; like `Subscription.close`, it returns once the listener isn't running.
         """
         return self._sdk._add_raw_listener(listener)
 
@@ -310,10 +320,10 @@ class DesktopSdk:
         self._held_deadline: float | None = None
 
         self._listener_ids = itertools.count()
-        self._state_listeners: dict[int, Callable[[ConnectionState], None]] = {}
-        self._heartbeat_listeners: dict[int, HeartbeatListener] = {}
-        self._raw_listeners: dict[int, _MessageListener] = {}
-        self._removed_listeners: dict[int, Callable[[str], None]] = {}
+        self._state_listeners: dict[int, _Registered] = {}
+        self._heartbeat_listeners: dict[int, _Registered] = {}
+        self._raw_listeners: dict[int, _Registered] = {}
+        self._removed_listeners: dict[int, _Registered] = {}
         # the store's instruments → their copies per name (_get_named)
         self._named: weakref.WeakKeyDictionary[Instrument, dict[str, Instrument]] = weakref.WeakKeyDictionary()
         self._waiters: list[Future[None]] = []
@@ -409,7 +419,7 @@ class DesktopSdk:
             listener: Called with each new state.
 
         Returns:
-            A function that removes the listener.
+            A function that removes the listener; like `Subscription.close`, it returns once the listener isn't running.
         """
         return self._add_listener(self._state_listeners, listener)
 
@@ -420,7 +430,7 @@ class DesktopSdk:
             listener: Called with each heartbeat's server time (None if it has none) and the `HeartBeat` message.
 
         Returns:
-            A function that removes the listener.
+            A function that removes the listener; like `Subscription.close`, it returns once the listener isn't running.
         """
         return self._add_listener(self._heartbeat_listeners, listener)
 
@@ -434,7 +444,7 @@ class DesktopSdk:
             listener: Called with each removed symbol.
 
         Returns:
-            A function that removes the listener.
+            A function that removes the listener; like `Subscription.close`, it returns once the listener isn't running.
         """
         return self._add_listener(self._removed_listeners, listener)
 
@@ -835,7 +845,7 @@ class DesktopSdk:
                         self._store.remove_book(market_id)
 
         calls: list[_Call] = [
-            partial(listener, symbol) for symbol in maybe_removed if not self._is_subscribed(symbol) for listener in self._removed_listeners.values()
+            listener.bind(symbol) for symbol in maybe_removed if not self._is_subscribed(symbol) for listener in self._removed_listeners.values()
         ]
         # what this batch sent: entries created or removed while logged in
         self._log_wire("Subscribing to", created)
@@ -920,7 +930,7 @@ class DesktopSdk:
         with self._lock:
             if connection is self._connection:
                 for listener in self._heartbeat_listeners.values():
-                    self._enqueue(partial(listener, server_time, heartbeat))
+                    self._enqueue(listener.bind(server_time, heartbeat))
 
     def _on_message(self, connection: Connection, message: openfeed_api_pb2.OpenfeedGatewayMessage, metadata: MessageMetadata) -> None:
         """Each message, in order: the state changes now, and its listeners are queued, each given what it would have got had
@@ -952,7 +962,7 @@ class DesktopSdk:
                     subscribers = self._registry.get_message_subscribers_by_id(market_id)
 
             calls.extend(partial(subscriber.deliver_message, message, metadata) for subscriber in subscribers)
-            calls.extend(partial(listener, message, metadata) for listener in self._raw_listeners.values())
+            calls.extend(listener.bind(message, metadata) for listener in self._raw_listeners.values())
             for call in calls:
                 self._enqueue(call)
 
@@ -1014,14 +1024,19 @@ class DesktopSdk:
         self._work.append(_Work(call, kept))
         self._lock.notify_all()
 
-    def _add_listener(self, listeners: dict[int, _T], listener: _T) -> Callable[[], None]:
+    def _add_listener(self, listeners: dict[int, _Registered], listener: Callable[..., None]) -> Callable[[], None]:
+        """Adds a listener; returns its `remove`, which, like `Subscription.close`, returns once the listener isn't running
+        (see `CallGuard`), and keeps calls already queued for it from running.
+        """
+        registered = _Registered(listener, CallGuard(self._lock))
         with self._lock:
             listener_id = next(self._listener_ids)
-            listeners[listener_id] = listener
+            listeners[listener_id] = registered
 
         def remove() -> None:
             with self._lock:
                 listeners.pop(listener_id, None)
+                registered.guard.close()
 
         return remove
 
@@ -1053,7 +1068,7 @@ class DesktopSdk:
         elif state == "credentials-rejected":
             self._reject_waiters(RuntimeError(_REJECTED))
         for listener in self._state_listeners.values():
-            self._enqueue(partial(listener, state), kept=True)
+            self._enqueue(listener.bind(state), kept=True)
 
     def _reject_waiters(self, error: Exception) -> None:
         waiters = self._waiters

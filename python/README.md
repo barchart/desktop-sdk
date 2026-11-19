@@ -55,7 +55,7 @@ Every method is safe to call from any thread, listeners included.
 - **Listeners run one at a time, in order, on the SDK's delivery thread**, and never inside the call that registered them, so you always hold the handle first.
 - **State is applied as messages arrive,** on another thread, so `get_quote` and the other getters are current even while a slow listener holds up the events behind it. Events wait in a queue with no limit: a listener that can't keep up should use `coalesce_interval_ms`.
 - **A listener mustn't wait on a future the SDK settles,** such as `sdk.when_connected().result()`, since settling it needs the thread the listener is running on. `add_done_callback` is fine.
-- **After `close()` returns, no new callback starts.** One already running on the delivery thread finishes.
+- **After `close()` returns, its listener isn't running and won't be called again.** Called from another thread while the listener is running, `close()` waits for it to finish; called from inside a listener, it doesn't wait. The same goes for the functions the `on_…` methods return, and calls already queued for a closed or removed listener are dropped. So don't close from a thread that a listener waits on, such as one holding a lock the listener takes.
 
 The SDK's threads are daemon threads, so one you forget to `dispose()` doesn't keep the process alive.
 
