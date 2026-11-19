@@ -89,14 +89,19 @@ export class InstrumentStore {
         this.#instruments.delete(marketId);
     }
 
-    /** `instrumentAction` EXCHANGE_MOVE: the instrument and its state move to a new marketId. */
-    moved(from: string, to: string) {
+    /**
+     * `instrumentAction` EXCHANGE_MOVE: the state moves to the new definition's marketId, and the new definition
+     * replaces the instrument.
+     */
+    moved(from: string, definition: InstrumentDefinition) {
+        const to = definition.marketId.toString();
         const state = this.#instruments.get(from);
-        if (!state || from === to) {
+        if (!state) {
             return;
         }
         this.#instruments.delete(from);
         this.#instruments.set(to, state);
+        this.#define(definition);
     }
 
     clear() {

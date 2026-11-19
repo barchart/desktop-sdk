@@ -122,13 +122,15 @@ class InstrumentStore:
     def remove_id(self, market_id: str) -> None:
         self._instruments.pop(market_id, None)
 
-    def moved(self, from_id: str, to_id: str) -> None:
-        """`instrumentAction` EXCHANGE_MOVE: the instrument and its state move to a new marketId."""
-        state = self._instruments.get(from_id)
-        if state is None or from_id == to_id:
+    def moved(self, from_id: str, definition: openfeed_instrument_pb2.InstrumentDefinition) -> None:
+        """`instrumentAction` EXCHANGE_MOVE: the state moves to the new definition's marketId, and the new definition
+        replaces the instrument.
+        """
+        state = self._instruments.pop(from_id, None)
+        if state is None:
             return
-        del self._instruments[from_id]
-        self._instruments[to_id] = state
+        self._instruments[str(definition.marketId)] = state
+        self._define(definition)
 
     def clear(self) -> None:
         self._instruments.clear()

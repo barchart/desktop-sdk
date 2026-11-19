@@ -108,11 +108,13 @@ def _make_event(  # noqa: PLR0913, PLR0917
 
 
 def _merge_cumulative_volume(earlier: CumulativeVolumePart | None, later: CumulativeVolumePart | None, kind: str) -> CumulativeVolumePart | None:
+    current = later or earlier
+    # a snapshot started the market over, so every level is a change, as on a snapshot event; that holds when the
+    # snapshot carried no volume at price too, since a consumer starts its levels over on any snapshot event
+    if current is not None and kind == "snapshot":
+        return CumulativeVolumePart(levels=current.levels, changed=current.levels)
     if earlier is None or later is None:
-        return later or earlier
-    # a snapshot started the levels over, so every level is a change, as on a snapshot event
-    if kind == "snapshot":
-        return CumulativeVolumePart(levels=later.levels, changed=later.levels)
+        return current
     changed = {level.price: level for level in (*earlier.changed, *later.changed)}
     return CumulativeVolumePart(levels=later.levels, changed=tuple(changed[price] for price in sorted(changed)))
 
@@ -973,6 +975,7 @@ class DesktopSdk:
           instrument's messages and `get_quote(alias)` is None. The server then repeats the subscription response for the
           alias, which names the new instrument, followed by its definition and snapshot.
         - EXCHANGE_MOVE: the instrument and its state move to the new marketId, and the entries that named it name the new one.
+          So do the changes held for the old marketId. The action's new definition replaces the instrument.
         Other actions are ignored.
         """
         if not action.HasField("instrument"):
@@ -983,8 +986,19 @@ class DesktopSdk:
             self._try_remove_id(market_id)
         elif action.action == openfeed_pb2.EXCHANGE_MOVE and action.HasField("newInstrument"):
             new_id = str(action.newInstrument.marketId)
-            self._store.moved(market_id, new_id)
+            self._store.moved(market_id, action.newInstrument)
             self._registry.moved(market_id, new_id)
+            self._registry.on_definition(action.newInstrument)
+            self._move_held(market_id, new_id)
+
+    def _move_held(self, from_id: str, to_id: str) -> None:
+        """Coalescing: a market's held changes, delivered by marketId, follow it to its new one."""
+        held = self._held.pop(from_id, None) if from_id != to_id else None
+        if held is None:
+            return
+        moved = dataclasses.replace(held.change, market_id=to_id)
+        already = self._held.get(to_id)
+        self._held[to_id] = _HeldChange(_merge_changes(moved, already.change), already.raw) if already is not None else _HeldChange(moved, held.raw)
 
     # ---- under the lock ----
 

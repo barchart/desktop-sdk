@@ -94,12 +94,14 @@ const mergeCumulativeVolume = (
     later: StateParts["cumulativeVolume"],
     kind: InstrumentChange["kind"]
 ): StateParts["cumulativeVolume"] => {
-    if (!earlier || !later) {
-        return later ?? earlier;
+    const current = later ?? earlier;
+    // a snapshot started the market over, so every level is a change, as on a snapshot event; that holds when the
+    // snapshot carried no volume at price too, since a consumer starts its levels over on any snapshot event
+    if (current && kind === "snapshot") {
+        return { levels: current.levels, changed: current.levels };
     }
-    // a snapshot started the levels over, so every level is a change, as on a snapshot event
-    if (kind === "snapshot") {
-        return { levels: later.levels, changed: later.levels };
+    if (!earlier || !later) {
+        return current;
     }
     const changed = new Map(earlier.changed.map((level) => [level.price, level]));
     for (const level of later.changed) {
@@ -831,7 +833,7 @@ export class DesktopSdk {
      *   old instrument's messages and `getQuote(alias)` is undefined. The server then repeats the subscription
      *   response for the alias, which names the new instrument, followed by its definition and snapshot.
      * - EXCHANGE_MOVE: the instrument and its state move to the new marketId, and the entries that named it name the
-     *   new one.
+     *   new one, as do the changes held for the old marketId. The action's new definition replaces the instrument.
      * Other actions are ignored.
      */
     #onInstrumentAction(action: InstrumentAction) {
@@ -844,13 +846,28 @@ export class DesktopSdk {
             this.#registry.aliasChanged(action.oldAlias, marketId);
             this.#tryRemoveId(marketId);
         } else if (action.action === ActionType.EXCHANGE_MOVE) {
-            const to = action.newInstrument?.marketId.toString();
-            if (to === undefined) {
+            const definition = action.newInstrument;
+            if (definition === undefined) {
                 return;
             }
-            this.#store.moved(marketId, to);
+            const to = definition.marketId.toString();
+            this.#store.moved(marketId, definition);
             this.#registry.moved(marketId, to);
+            this.#registry.onDefinition(definition);
+            this.#moveHeld(marketId, to);
         }
+    }
+
+    /** Coalescing: a market's held changes, delivered by marketId, follow it to its new one. */
+    #moveHeld(from: string, to: string) {
+        const held = this.#held.get(from);
+        if (!held || from === to) {
+            return;
+        }
+        this.#held.delete(from);
+        const moved = { ...held.change, marketId: to };
+        const already = this.#held.get(to);
+        this.#held.set(to, already ? { change: mergeChanges(moved, already.change), raw: already.raw } : { change: moved, raw: held.raw });
     }
 
     /**
