@@ -92,6 +92,26 @@ describe("a definition without a price format", () => {
     });
 });
 
+describe("a decimal format's denominator", () => {
+    it("gives the decimals its unit needs, so a power of 2 keeps every digit", () => {
+        const eighths = createInstrument(definition({ priceFormat: decimalFormat(8) }), quiet);
+        expect(eighths.priceFormat.numDecimals).toBe(3);
+        expect(eighths.formatPrice(112.125)).toBe("112.125");
+        expect(createInstrument(definition({ priceFormat: decimalFormat(1000) }), quiet).priceFormat.numDecimals).toBe(3);
+        expect(createInstrument(definition({ priceFormat: decimalFormat(1) }), quiet).priceFormat.numDecimals).toBe(0);
+    });
+
+    it("of 0 or less is no format: a warning, and prices as plain numbers", () => {
+        for (const format of [decimalFormat(0), decimalFormat(-10), fractionFormat(0)]) {
+            const { logger, warnings } = recordingLogger();
+            const instrument = createInstrument(definition({ priceFormat: format }), logger);
+            expect(warnings).toHaveLength(1);
+            expect([instrument.priceFormat.numDecimals, instrument.priceFormat.fraction]).toEqual([undefined, undefined]);
+            expect([instrument.formatPrice(100.5), instrument.formatPrice(100.5, "decimal")]).toEqual(["100.5", "100.5"]);
+        }
+    });
+});
+
 describe("formatQuote", () => {
     const empty = applySnapshot({ tradeDate: 0 } as unknown as MarketSnapshot, zn);
     const quote = {

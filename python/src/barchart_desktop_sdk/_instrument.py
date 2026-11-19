@@ -1,14 +1,13 @@
 """Instrument: the protocol-derived part of an instrument: scaling, price format and price formatting."""
 
 import logging
-import math
 import re
 from dataclasses import dataclass, field
 from typing import Literal, overload
 
 from openfeed.generated import openfeed_instrument_pb2
 
-from ._price_format import PriceFormat, PriceFraction, format_price, format_price_decimal, get_integer_part, price_to_number
+from ._price_format import PriceFormat, PriceFraction, format_price, format_price_decimal, get_integer_part, get_unit_decimals, price_to_number
 
 PriceNotation = Literal["native", "decimal"]
 """`native`: the instrument's own notation (fractional for 32nds, say: "112-16"); `decimal`: "112.50000"."""
@@ -122,6 +121,10 @@ def _get_price_format(definition: openfeed_instrument_pb2.InstrumentDefinition, 
         return PriceFormat(price_scaling=1)
     price_format = definition.priceFormat
     exponent = definition.priceScalingExponent
+    # a denominator that can't be one: prices are written as plain numbers, as for an unknown format
+    is_valid = price_format.denominator > 0
+    if not is_valid:
+        log.warning("Invalid price format denominator for %s: %s", definition.symbol, price_format.denominator)
 
     if not price_format.isFractional:
         price_scaling = 1.0
@@ -129,7 +132,10 @@ def _get_price_format(definition: openfeed_instrument_pb2.InstrumentDefinition, 
             price_scaling /= 10**-exponent
         elif exponent > 0:
             price_scaling *= 10**exponent
-        return PriceFormat(price_scaling=price_scaling, num_decimals=_log10(price_format.denominator))
+        # the decimals the denominator's unit needs: 100 → 2, and 8 → 3, since 1/8 is 0.125
+        return PriceFormat(price_scaling=price_scaling, num_decimals=get_unit_decimals(1 / price_format.denominator) if is_valid else None)
+    if not is_valid:
+        return PriceFormat(price_scaling=1)
 
     # Anything finer than the base is written as parts of it: in 32nds, 64 is half 32nds; in 64ths, 128 is half 64ths.
     base = 64 if _get_option_underlying_root(definition) in _TREASURY_OPTION_ROOTS else 32
@@ -140,11 +146,6 @@ def _get_price_format(definition: openfeed_instrument_pb2.InstrumentDefinition, 
     else:
         fraction = PriceFraction(denominator=denominator, subdenominator=price_format.subDenominator or 1)
     return PriceFormat(price_scaling=1, fraction=fraction)
-
-
-def _log10(denominator: int) -> float:
-    """`Math.log10`; JavaScript gives -Infinity for 0, where Python raises."""
-    return math.log10(denominator) if denominator > 0 else -math.inf
 
 
 def create_instrument(definition: openfeed_instrument_pb2.InstrumentDefinition, log: logging.Logger) -> Instrument:

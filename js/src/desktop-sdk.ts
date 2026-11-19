@@ -58,6 +58,9 @@ interface Waiter {
     reject(error: Error): void;
 }
 
+/** What `whenConnected` rejects with once the server rejected the credentials. */
+const REJECTED = "Openfeed rejected the credentials";
+
 /** A request for the subscription loop. */
 type Op = { readonly kind: "subscribe"; readonly subscriber: Subscriber } | { readonly kind: "close"; readonly subscriber: Subscriber };
 
@@ -414,7 +417,8 @@ export class DesktopSdk {
      * Waits for the connection, through a login if there hasn't been one yet.
      *
      * @returns A promise that resolves once connected, at once if already connected. It rejects if the server rejects
-     * the credentials or the SDK is disposed first.
+     * the credentials or the SDK is disposed first, and at once while the state is `credentials-rejected`: those stay
+     * rejected until the next `login`.
      */
     whenConnected(): Promise<void> {
         if (this.#disposed) {
@@ -422,6 +426,9 @@ export class DesktopSdk {
         }
         if (this.#state === "connected") {
             return Promise.resolve();
+        }
+        if (this.#state === "credentials-rejected") {
+            return Promise.reject(new Error(REJECTED));
         }
         return new Promise((resolve, reject) => {
             this.#waiters.push({ resolve, reject });
@@ -933,7 +940,7 @@ export class DesktopSdk {
             this.#resolveWaiters();
         }
         if (state === "credentials-rejected") {
-            this.#rejectWaiters(new Error("Openfeed rejected the credentials"));
+            this.#rejectWaiters(new Error(REJECTED));
         }
         for (const listener of [...this.#stateListeners]) {
             this.#call(() => {

@@ -29,7 +29,7 @@ Protocol names (services, subscription types, results, messages such as `Openfee
 | `dispose()` | Logs out, closes every subscription and removes every listener. |
 | `connectionState` | `logged-out`, `connecting`, `connected`, `disconnected` or `credentials-rejected` (until the next `login` or `logout`). |
 | `onConnectionState(listener)` | Called with each new connection state. |
-| `whenConnected()` | Resolves once connected, waiting for a login if needed. Rejects if the credentials are rejected or the SDK is disposed first. |
+| `whenConnected()` | Resolves once connected, waiting for a login if needed. Rejects if the credentials are rejected or the SDK is disposed first, and at once while the state is `credentials-rejected`. |
 | `onHeartbeat(listener)` | Called with each heartbeat as `(serverTime, raw)`: the server's time as a `Date` (`null` if it has none), and the `HeartBeat` message. |
 
 Reconnecting and resubscribing after a lost connection are the Openfeed client's job.

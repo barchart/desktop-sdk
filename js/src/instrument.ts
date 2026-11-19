@@ -1,6 +1,6 @@
 import { type InstrumentDefinition, InstrumentDefinition_InstrumentType, InstrumentDefinition_OptionType } from "@openfeed/sdk-js";
 import type Long from "long";
-import { formatPrice, formatPriceDecimal, getIntegerPart, priceToNumber, type PriceFormat } from "./price-format";
+import { formatPrice, formatPriceDecimal, getIntegerPart, getUnitDecimals, priceToNumber, type PriceFormat } from "./price-format";
 import type { SdkLogger } from "./types";
 
 /** `native`: the instrument's own notation (fractional for 32nds, say: "112-16"); `decimal`: "112.50000". */
@@ -98,6 +98,11 @@ const getPriceFormat = (definition: InstrumentDefinition, log: SdkLogger): Price
             priceScaling: 1,
         };
     }
+    // a denominator that can't be one: prices are written as plain numbers, as for an unknown format
+    const isValid = priceFormat.denominator > 0;
+    if (!isValid) {
+        log.warn("Invalid price format denominator for", definition.symbol, priceFormat.denominator);
+    }
 
     if (!priceFormat.isFractional) {
         let priceScaling = 1;
@@ -109,8 +114,11 @@ const getPriceFormat = (definition: InstrumentDefinition, log: SdkLogger): Price
                 priceScaling *= 10 ** priceScalingExponent;
             }
         }
-        const numDecimals = Math.log10(priceFormat.denominator);
-        return { numDecimals, priceScaling };
+        // the decimals the denominator's unit needs: 100 → 2, and 8 → 3, since 1/8 is 0.125
+        return isValid ? { numDecimals: getUnitDecimals(1 / priceFormat.denominator), priceScaling } : { priceScaling };
+    }
+    if (!isValid) {
+        return { priceScaling: 1 };
     }
 
     // Anything finer than the base is written as parts of it: in 32nds, 64 is half 32nds; in 64ths, 128 is half 64ths

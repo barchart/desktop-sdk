@@ -84,6 +84,23 @@ class TestWithoutPriceFormat:
         assert self.plain.format_price(100, "decimal") == "100"
 
 
+class TestDecimalDenominator:
+    def test_gives_the_decimals_its_unit_needs_so_a_power_of_2_keeps_every_digit(self) -> None:
+        eighths = create_instrument(definition(price_format=decimal_format(8)), quiet)
+        assert eighths.price_format.num_decimals == 3
+        assert eighths.format_price(112.125) == "112.125"
+        assert create_instrument(definition(price_format=decimal_format(1000)), quiet).price_format.num_decimals == 3
+        assert create_instrument(definition(price_format=decimal_format(1)), quiet).price_format.num_decimals == 0
+
+    @pytest.mark.parametrize("price_format", [decimal_format(0), decimal_format(-10), fraction_format(0)])
+    def test_of_0_or_less_is_no_format_a_warning_and_prices_as_plain_numbers(self, price_format: dict[str, object]) -> None:
+        logger, warnings = recording_logger()
+        instrument = create_instrument(definition(price_format=price_format), logger)
+        assert len(warnings) == 1
+        assert (instrument.price_format.num_decimals, instrument.price_format.fraction) == (None, None)
+        assert (instrument.format_price(100.5), instrument.format_price(100.5, "decimal")) == ("100.5", "100.5")
+
+
 class TestFormattedQuote:
     empty = apply_snapshot(openfeed_pb2.MarketSnapshot(tradeDate=0), zn)
     quote = dataclasses.replace(

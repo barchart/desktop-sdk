@@ -171,6 +171,19 @@ describe("raw access and lifetime", () => {
     });
 });
 
+describe("whenConnected", () => {
+    it("rejects the waiters when the credentials are rejected, and any call after, at once", async () => {
+        const sdk = createSdk();
+        sdk.login({ url: "ws://test", username: "u", password: "p" });
+        const waiting = sdk.whenConnected();
+        void defined(clients.last).listeners.onCredentialsRejected();
+        await expect(waiting).rejects.toThrow("Openfeed rejected the credentials");
+        expect(sdk.connectionState).toBe("credentials-rejected");
+        // it would wait for the next login, and the test time out, if it didn't reject at once
+        await expect(sdk.whenConnected()).rejects.toThrow("Openfeed rejected the credentials");
+    });
+});
+
 describe("an instrument's symbol", () => {
     it("is the name it's reached by, with one copy per name until the next definition", async () => {
         const sdk = createSdk();
