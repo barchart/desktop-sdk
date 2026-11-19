@@ -38,13 +38,14 @@ export interface SessionRecord {
     readonly settlePreliminary: boolean | null;
 
     /**
-     * The previous session's settlement price, as the last snapshot sent it with this session. Updates change
-     * `previousSession.settle` instead, so read that one for the latest value.
+     * The settlement price of the session before this one. Openfeed sends it for `previousSession` only, in
+     * snapshots: there it's the settlement two sessions back. On `session` it stays `null`: the previous session's
+     * settlement is `previousSession.settle`. Both sessions have the field because they have one type.
      */
     readonly prevSettle: number | null;
-    /** When the previous session's settlement was set. */
+    /** When the settlement before this session was set. */
     readonly prevSettleTime: Date | null;
-    /** The session the previous settlement belongs to. */
+    /** The session the settlement before this one belongs to. */
     readonly prevSettleTradeDate: TradeDate | null;
 
     /** The last price. */
@@ -176,7 +177,7 @@ const bbo = (b: BestBidOffer | undefined, i: Instrument): BestBidOfferRecord =>
     Object.freeze({
         bidPrice: i.price(b?.bidPrice),
         askPrice: i.price(b?.offerPrice),
-        // the sizes as sent: not scaled
+        // the feed sends these sizes in real units already, unlike its other quantities, so they aren't scaled
         bidSize: b?.bidQuantity.toNumber() ?? null,
         askSize: b?.offerQuantity.toNumber() ?? null,
         bidOrderCount: b?.bidOrderCount ?? null,
@@ -209,7 +210,7 @@ const readSession = (s: SessionMessage, i: Instrument, settleDateFromSession: bo
         ...stamped("prevSettle", s.prevSettlement, i),
 
         ...stamped("last", s.last, i),
-        // as sent: not scaled in snapshots
+        // a snapshot's last size is in real units already, unlike an update's, so it isn't scaled
         lastSize: s.last?.quantity.toNumber() ?? null,
         lastTrade: i.price(s.lastTrade?.price),
 

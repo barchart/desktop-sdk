@@ -219,7 +219,7 @@ export class Registry {
             if (response.status?.result === Result.SUCCESS) {
                 entry.status = "active";
                 entry.error = undefined;
-                // a response without a market names none, as the JS client skips it
+                // a response without a market (marketId 0) names none
                 if (!response.marketId.isZero()) {
                     this.#name(entry, response.marketId.toString());
                 }
@@ -381,7 +381,7 @@ export class Registry {
             try {
                 this.#client.unsubscribe(entry.clientId);
             } catch (e) {
-                // the client throws for ids it doesn't know (Part D)
+                // the client throws for ids it doesn't know, such as one already unsubscribed
                 this.log.warn("OF SDK > Unsubscribe failed", entry.key, e);
             }
         }

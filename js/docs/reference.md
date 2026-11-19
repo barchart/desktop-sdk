@@ -44,21 +44,22 @@ Reconnecting and resubscribing after a lost connection are the Openfeed client's
 
 Each returns a `Subscription` (§7) at once, in state `pending`.
 
-- **Listener:** `{ onEvent?, onError?, onMessage? }`. `onEvent` gets the events; `onError` gets a `SubscriptionError` when the server refuses the subscription; `onMessage` also gets the subscription's raw messages, after `onEvent`.
+- **Listener:** `{ onEvent?, onError?, onMessage? }`. `onEvent` gets the events; `onError` gets a `SubscriptionError` when the server refuses the subscription; `onMessage` also gets the subscription's raw messages, after the SDK applied them: after the `onEvent` they cause, or before it when events are coalesced (§7).
 - **First callback:** after `subscribe` has returned, never inside it. A new subscriber gets the current state as one `initial` event, or the stored error if the server already refused the subscription.
 - **Shared subscriptions:** subscriptions with the same symbol, type and service share one Openfeed subscription, which closes with the last of them.
+- **One state per instrument, whatever the service:** Openfeed's updates don't say which service sent them, so an instrument subscribed on two services (`REAL_TIME` and `DELAYED`, say) gets both services' updates in one state. Subscribe to an instrument on one service at a time.
 - **Cumulative volume** also holds the symbol's `ALL` subscription on `REAL_TIME`, the one `subscribeQuote` uses by default, so it keeps updating with the symbol's trades. If that subscription fails, the cumulative volume subscribers get its error, with `requiredBy` set. Not every Openfeed server sends volume at price: on one that doesn't, the subscription goes `active`, but no events come and `getCumulativeVolume` stays `undefined`.
 - **Aliases follow rolls.** At a roll, `<ROOT>*<N>` moves on to the contract `<ROOT>*<N+1>` named until then; `<ROOT>*0` follows the most active contract, as Barchart picks it. The new contract arrives as a `snapshot` event with the new `instrument`.
 - **While logged out,** subscriptions stay `pending`, and are sent at the next login.
 
 | Member | |
 |---|---|
-| `isSubscribed(symbol)` | Whether a subscription currently holds the symbol. |
+| `isSubscribed(symbol)` | Whether a subscription currently holds the symbol. A raw subscription holds its instruments by their definition symbols (`ZCZ26`), not by the symbol it was made with. |
 | `onRemoved(listener)` | Called with a symbol when the last subscription holding it closes. |
 
 ## 3. State
 
-The current state for a symbol, as the last event delivered it; `undefined` until the SDK has it. Everything returned is frozen. The symbol is one you subscribed to, an alias included, or the definition symbol of an instrument a root subscription (`ZC^UDS`) brought in, while it's open.
+The current state for a symbol, with every message applied; `undefined` until the SDK has it. With `coalesceIntervalMs`, that can be ahead of the last event delivered (§7). Everything returned is frozen. The symbol is one you subscribed to, an alias included, or the definition symbol of an instrument a root subscription (`ZC^UDS`) brought in, while it's open.
 
 | Method | Returns |
 |---|---|
@@ -147,10 +148,11 @@ Every event has:
 | `bestBidOffer` | `BestBidOfferRecord` | `bidPrice`, `bidSize`, `bidOrderCount`, `askPrice`, `askSize`, `askOrderCount` |
 | `status` | `StatusRecord` | `trading`, `prior` (trading status codes), `tradeDate`, `time` |
 
-`SessionRecord`: `tradeDate`; `open`, `high`, `low`; `close` with `closeTime` and `closeTradeDate`; `settle` with `settleTime`, `settleTradeDate` and `settlePreliminary`; `prevSettle` with `prevSettleTime` and `prevSettleTradeDate`; `last` with `lastTime`, `lastTradeDate` and `lastSize`; `lastTrade`; `volume`, `openInterest`, `numberOfTrades`.
+`SessionRecord`: `tradeDate`; `open`, `high`, `low`; `close` with `closeTime` and `closeTradeDate`; `settle` with `settleTime`, `settleTradeDate` and `settlePreliminary`; `prevSettle` with `prevSettleTime` and `prevSettleTradeDate` (the settlement of the session before it); `last` with `lastTime`, `lastTradeDate` and `lastSize`; `lastTrade`; `volume`, `openInterest`, `numberOfTrades`.
 
 - Prices and quantities are numbers, scaled to their real values.
 - `null` means the feed hasn't sent the field.
+- `session` and `previousSession` have the same type, so code that reads one reads the other. Openfeed sends some fields for only one of them: `previousSession.prevSettle` is the settlement two sessions back, while `session.prevSettle` stays `null`, since the previous session's settlement is `previousSession.settle`.
 - A group is a new object only when it changed, so an unchanged group can be told by identity.
 - `…Time` fields are `Date`s; `…TradeDate` fields (and `tradeDate`) are `TradeDate`s. Treat the `Date`s as read-only, like the rest of the record.
 
