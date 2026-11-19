@@ -1,6 +1,6 @@
 # Barchart Desktop SDK for Python
 
-Live quotes, order books and cumulative volume from [Openfeed](https://docs.barchart.com/openfeed), kept up to date for you. The Python port of [`@barchart/desktop-sdk-js`](https://github.com/barchart/desktop-sdk/tree/main/js), which is the reference implementation: its [reference](https://github.com/barchart/desktop-sdk/blob/main/js/docs/reference.md) and [design](https://github.com/barchart/desktop-sdk/blob/main/js/docs/design.md) describe what this package does.
+Live quotes, order books and cumulative volume from [Openfeed](https://openfeed.com/), kept up to date for you. The Python port of [`@barchart/desktop-sdk-js`](https://github.com/barchart/desktop-sdk/tree/main/js), which is the reference implementation: its [reference](https://github.com/barchart/desktop-sdk/blob/main/js/docs/reference.md) and [design](https://github.com/barchart/desktop-sdk/blob/main/js/docs/design.md) describe what this package does.
 
 > **Early release.** The API follows the TypeScript SDK.
 

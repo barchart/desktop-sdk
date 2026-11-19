@@ -157,8 +157,9 @@ class Listener(Generic[_E]):
     """The server refused the subscription; the subscription is then in `error`."""
     on_message: Callable[[openfeed_api_pb2.OpenfeedGatewayMessage, MessageMetadata], None] | None = None
     """Also every raw message for the subscription's instrument, as a raw subscription gets it (responses, and every
-    message for the instruments its responses named), after the SDK applied it and after `on_event`. For a consumer that
-    needs the state and the raw stream from one subscription, such as a chart.
+    message for the instruments its responses named), after the SDK applied it: after the `on_event` it causes, or before
+    it when events are coalesced (`coalesce_interval_ms`). For a consumer that needs the state and the raw stream from
+    one subscription, such as a chart.
     """
 
 
