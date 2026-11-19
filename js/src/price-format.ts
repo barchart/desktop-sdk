@@ -107,6 +107,15 @@ export const formatPrice = (price: number | null | undefined, format: PriceForma
     return price.toString();
 };
 
+/** How many decimals write `unit` exactly, up to 12: 0.01 → 2, 0.125 → 3, 1/32 → 5. */
+export const getUnitDecimals = (unit: number): number => {
+    let decimals = 0;
+    while (decimals < 12 && Math.abs(unit * 10 ** decimals - Math.round(unit * 10 ** decimals)) > 1e-9) {
+        decimals += 1;
+    }
+    return decimals;
+};
+
 const getDecimalCount = (format: PriceFormat): number | undefined => {
     if (format.numDecimals !== undefined) {
         return format.numDecimals;
@@ -114,12 +123,7 @@ const getDecimalCount = (format: PriceFormat): number | undefined => {
     if (!format.fraction) {
         return undefined;
     }
-    const unit = 1 / (format.fraction.denominator * format.fraction.subdenominator);
-    let decimals = 0;
-    while (decimals < 12 && Math.abs(unit * 10 ** decimals - Math.round(unit * 10 ** decimals)) > 1e-9) {
-        decimals += 1;
-    }
-    return decimals;
+    return getUnitDecimals(1 / (format.fraction.denominator * format.fraction.subdenominator));
 };
 
 /**

@@ -63,6 +63,9 @@ class TestLogin:
 
         with pytest.raises(RuntimeError, match="rejected the credentials"):
             connected.result(5)
+        # and any call after, at once: no waiting for the next login
+        with pytest.raises(RuntimeError, match="rejected the credentials"):
+            sdk.when_connected().result(0)
         assert client.stopped.is_set()
         flush(sdk)
         assert states == ["connecting", "credentials-rejected"]

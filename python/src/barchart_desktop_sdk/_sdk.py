@@ -470,7 +470,8 @@ class DesktopSdk:
 
         Returns:
             A future that's done once connected, at once if already connected. It fails if the server rejects the
-            credentials or the SDK is disposed first.
+            credentials or the SDK is disposed first, and at once while the state is `credentials-rejected`: those stay
+            rejected until the next `login`.
         """
         future: Future[None] = Future()
         with self._lock:
@@ -478,6 +479,8 @@ class DesktopSdk:
                 future.set_exception(RuntimeError(_DISPOSED))
             elif self._state == "connected":
                 future.set_result(None)
+            elif self._state == "credentials-rejected":
+                future.set_exception(RuntimeError(_REJECTED))
             else:
                 self._waiters.append(future)
         return future

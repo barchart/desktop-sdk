@@ -125,16 +125,20 @@ def format_price(price: float | None, price_format: PriceFormat) -> str:
     return number_to_string(price)
 
 
+def get_unit_decimals(unit: float) -> int:
+    """How many decimals write `unit` exactly, up to 12: 0.01 → 2, 0.125 → 3, 1/32 → 5."""
+    decimals = 0
+    while decimals < 12 and abs(unit * 10**decimals - js_round(unit * 10**decimals)) > 1e-9:
+        decimals += 1
+    return decimals
+
+
 def _get_decimal_count(price_format: PriceFormat) -> float | None:
     if price_format.num_decimals is not None:
         return price_format.num_decimals
     if price_format.fraction is None:
         return None
-    unit = 1 / (price_format.fraction.denominator * price_format.fraction.subdenominator)
-    decimals = 0
-    while decimals < 12 and abs(unit * 10**decimals - js_round(unit * 10**decimals)) > 1e-9:
-        decimals += 1
-    return decimals
+    return get_unit_decimals(1 / (price_format.fraction.denominator * price_format.fraction.subdenominator))
 
 
 def format_price_decimal(price: float | None, price_format: PriceFormat) -> str:
