@@ -176,7 +176,7 @@ class RawAccess:
     def on_message(self, listener: _MessageListener) -> Callable[[], None]:
         """Listens for every incoming message, after the SDK and its subscribers have handled it.
 
-        Meant for a proxy that forwards everything.
+        For a consumer that forwards or records the whole stream.
 
         Args:
             listener: Called with each message and what the Openfeed client knows about it.
@@ -440,7 +440,8 @@ class DesktopSdk:
         """Whether a subscription currently holds the symbol's instrument.
 
         That includes a raw subscription whose responses named it, such as a root subscription (`ZC^UDS`) with its
-        instruments. The `get_…` methods answer only while this is true.
+        instruments, by their definition symbols (`ZCZ26`): not by the symbol the raw subscription was made with. The
+        `get_…` methods answer only while this is true.
 
         Args:
             symbol: A subscribed symbol (an alias included), or the definition symbol of an instrument a subscription

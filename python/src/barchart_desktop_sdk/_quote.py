@@ -51,13 +51,14 @@ class SessionRecord:
     """Whether the settlement is preliminary, rather than final."""
 
     prev_settle: float | None = None
-    """The previous session's settlement price, as the last snapshot sent it with this session. Updates change
-    `previous_session.settle` instead, so read that one for the latest value.
+    """The settlement price of the session before this one. Openfeed sends it for `previous_session` only, in
+    snapshots: there it's the settlement two sessions back. On `session` it stays `None`: the previous session's
+    settlement is `previous_session.settle`. Both sessions have the field because they have one type.
     """
     prev_settle_time: datetime | None = None
-    """When the previous session's settlement was set."""
+    """When the settlement before this session was set."""
     prev_settle_trade_date: date | None = None
-    """The session the previous settlement belongs to."""
+    """The session the settlement before this one belongs to."""
 
     last: float | None = None
     """The last price."""
@@ -176,7 +177,7 @@ def _bbo(b: openfeed_pb2.BestBidOffer, i: Instrument) -> BestBidOfferRecord:
     return BestBidOfferRecord(
         bid_price=i.price(b.bidPrice),
         ask_price=i.price(b.offerPrice),
-        # the sizes as sent: not scaled
+        # the feed sends these sizes in real units already, unlike its other quantities, so they aren't scaled
         bid_size=b.bidQuantity,
         ask_size=b.offerQuantity,
         bid_order_count=b.bidOrderCount,
@@ -225,7 +226,7 @@ def _read_session(
         last=last_stamp.price,
         last_time=last_stamp.time,
         last_trade_date=last_stamp.trade_date,
-        # as sent: not scaled in snapshots
+        # a snapshot's last size is in real units already, unlike an update's, so it isn't scaled
         last_size=last.quantity if last is not None else None,
         last_trade=i.price(s.lastTrade.price) if s.HasField("lastTrade") else None,
         volume=i.quantity(s.volume.volume) if s.HasField("volume") else None,
