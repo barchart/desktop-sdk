@@ -86,7 +86,7 @@ The service defaults to real time (`Service.REAL_TIME` from `@openfeed/sdk-js`);
 
 ## Reading state
 
-Each symbol's current state, as the last event delivered it:
+Each symbol's current state, with every message applied:
 
 ```ts
 sdk.getInstrument("ES*0"); // Instrument

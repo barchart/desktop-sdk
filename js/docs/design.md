@@ -6,7 +6,7 @@ How the SDK works inside: for contributors, and for anyone porting it to another
 
 - **Protocol state, not interpretation.** The SDK keeps what Openfeed sends, scaled and grouped as the protocol groups it. Anything that interprets it stays out: derived fields such as a session-aware last price or a price change, enriched instrument data, spread aliases, computed analytics such as option Greeks. Applications build those on top.
 - **No new wire protocol.** The SDK speaks standard Openfeed, through each language's Openfeed client. The Barchart Desktop API sends standard Openfeed messages too.
-- **One spec, several languages.** TypeScript is the reference implementation. The reference, this document and the fixtures (§9) are what other ports follow, so behavior is written down rather than left to the code.
+- **One spec, several languages.** TypeScript is the reference implementation. The reference and this document (and, once they're here, the fixtures of §9) are what other ports follow, so behavior is written down rather than left to the code.
 - **A portable core.** The SDK depends only on the Openfeed client and `long`. No DOM (`window`, `document`), no date library. Its one wait is the opt-in coalescing interval (§7).
 - **One visible flow.** Subscribing and closing go through one loop (§5); messages go through one path (§3). No hidden deferrals, proxies or microtask tricks.
 
@@ -62,7 +62,7 @@ One state per `marketId`, since a `marketId` is one listed instrument on its exc
 - **Named instruments:** the store keeps one `Instrument` per market, with the definition's `symbol`. The facade hands out a copy per name it's reached by, with `symbol` set to that name (`ES*0`, `ESZ26`), kept until a new definition replaces the store's instrument.
 - **Definitions** create a market, or replace its instrument and keep its state.
 - **Snapshots and updates without a definition** are skipped: there's nothing to scale them with.
-- **Snapshots** replace the market's state; **updates** go through the reducers below, once the market has had a snapshot.
+- **Snapshots** replace the market's quote. They replace its book and cumulative volume only when they carry them (price levels, volume at price), since a snapshot of another subscription type on the same market doesn't. **Updates** go through the reducers below, once the market has had a snapshot.
 - **Lifetime:** the store never drops a market by itself. The facade drops it once no subscription names it (the registry's market index); a raw subscription such as a root names its instruments without linking them, and holds them while it's open. `logout` clears the whole store.
 - **`EXCHANGE_MOVE`** moves a market's state and its index entry to the new `marketId`.
 - **Freezing:** records, books (with their arrays and levels) and level lists are frozen as they're stored.
@@ -144,6 +144,8 @@ One entry per `(service, subscription type, symbol)`, in two layers:
 | `EXCHANGE_MOVE` | Nothing. The state and the named markets move to the new `marketId`. |
 
 ## 9. Portability and fixtures
+
+**Status:** the fixtures described here aren't in this repository yet. A first set of message streams exists internally and will move here, with a runner per SDK. Until then, each SDK's own tests check these rules.
 
 | Part | How it stays the same across languages |
 |---|---|

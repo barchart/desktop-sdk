@@ -129,8 +129,9 @@ export interface Listener<E> {
     onError?(error: SubscriptionError): void;
     /**
      * Optional: also every raw message for the subscription's instrument, as a raw subscription gets it (responses,
-     * and every message for the instruments its responses named), after the SDK applied it and after `onEvent`.
-     * For a consumer that needs the state and the raw stream from one subscription, such as a chart.
+     * and every message for the instruments its responses named), after the SDK applied it: after the `onEvent` it
+     * causes, or before it when events are coalesced (`coalesceIntervalMs`). For a consumer that needs the state and
+     * the raw stream from one subscription, such as a chart.
      */
     onMessage?(message: OpenfeedGatewayMessage, metadata: MessageMetadata): void;
 }
@@ -255,7 +256,7 @@ export interface RawAccess {
     subscribe(symbol: string, type: SubscriptionType, listener?: RawListener, service?: Service): Subscription;
     /** A one-off snapshot: resolves with the definition and the first snapshot, then closes. Rejects on an error. */
     requestSnapshot(symbol: string, service?: Service): Promise<SnapshotMessage>;
-    /** Every incoming message, after the SDK applied it. Meant for the Desktop proxy, which forwards everything. */
+    /** Every incoming message, after the SDK applied it: for a consumer that forwards or records the whole stream. */
     onMessage(listener: (message: OpenfeedGatewayMessage, metadata: MessageMetadata) => void): () => void;
     /** Sends a request the SDK doesn't model. Returns the correlation id, or undefined when not connected. */
     send(request: OpenfeedRequest, correlationId?: Long): Long | undefined;

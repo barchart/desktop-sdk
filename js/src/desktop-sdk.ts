@@ -397,8 +397,8 @@ export class DesktopSdk {
 
     /**
      * Whether a subscription currently holds the symbol's instrument, including a raw subscription whose responses
-     * named it, such as a root subscription (`ZC^UDS`) with its instruments. The `get…` methods answer only while this
-     * is `true`.
+     * named it, such as a root subscription (`ZC^UDS`) with its instruments, by their definition symbols (`ZCZ26`):
+     * not by the symbol the raw subscription was made with. The `get…` methods answer only while this is `true`.
      *
      * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
      * subscription holds.
