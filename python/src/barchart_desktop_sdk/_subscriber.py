@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import weakref
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
@@ -10,7 +11,6 @@ from ._types import BookEvent, CumulativeVolumeEvent, Listener, MessageMetadata,
 
 if TYPE_CHECKING:
     import logging
-    import threading
     from collections.abc import Callable
 
     from openfeed.generated import openfeed_api_pb2
@@ -121,8 +121,45 @@ class Subscription:
         return self._subscriber.get_error()
 
     def close(self) -> None:
-        """Idempotent. No new callback starts after it returns; one already running on the delivery thread finishes."""
+        """Idempotent. Once it returns, the listener isn't running and won't be called again: called from another thread
+        while the listener runs, it waits for it to finish; called from inside a listener, it doesn't wait.
+        """
         self._subscriber.close()
+
+
+@dataclass(eq=False, slots=True)
+class CallGuard:
+    """Runs one listener's calls until it's closed. Calls run on the delivery thread, one at a time; closing from another
+    thread waits for one that's running, so none runs after `close` returns. Closing on the delivery thread, from inside a
+    callback, doesn't wait: the running call is the caller's own, and waiting for it would never end.
+    """
+
+    _lock: threading.Condition
+    closed: bool = field(default=False, init=False)
+    _running_on: threading.Thread | None = field(default=None, init=False)
+
+    def run(self, call: Callable[[], None]) -> None:
+        """Calls `call` unless closed; on the delivery thread, without the lock."""
+        with self._lock:
+            if self.closed:
+                return
+            self._running_on = threading.current_thread()
+        try:
+            call()
+        finally:
+            with self._lock:
+                self._running_on = None
+                self._lock.notify_all()
+
+    def close(self) -> bool:
+        """Called with the lock held; returns once no call is running, except one on this thread. True if this call closed
+        it, False if it was closed already.
+        """
+        was_open = not self.closed
+        self.closed = True
+        while self._running_on is not None and self._running_on is not threading.current_thread():
+            self._lock.wait()
+        return was_open
 
 
 class Subscriber:
@@ -142,13 +179,22 @@ class Subscriber:
         self.key = key
         self.method = method
         self.listener = listener
-        self.closed = False
+        self._guard = CallGuard(lock)
         self.entry: Entry | None = None
         """Set when the delivery thread processes the subscribe; until then the handle is `pending`."""
         self.handle = Subscription(self)
         self._log = log
         self._lock = lock
         self._on_close = on_close
+
+    @property
+    def closed(self) -> bool:
+        return self._guard.closed
+
+    @closed.setter
+    def closed(self, closed: bool) -> None:
+        """Marks it closed without waiting, for the SDK's own closing under the lock (a dispose, say)."""
+        self._guard.closed = closed
 
     def get_state(self) -> SubscriptionState:
         with self._lock:
@@ -161,20 +207,22 @@ class Subscriber:
             return None if self.closed or self.entry is None else get_subscriber_error(self.entry)
 
     def close(self) -> None:
+        """Closes it, and returns once its listener isn't running (see `CallGuard`)."""
         with self._lock:
-            if self.closed:
-                return
-            self.closed = True
-            self._on_close(self)
+            # the first close queues the subscription loop's close; every one waits for a running listener
+            if self._guard.close():
+                self._on_close(self)
 
     def _call(self, call: Callable[[], None]) -> None:
-        """Calls the listener, logging instead of raising."""
-        if self.closed:
-            return
-        try:
-            call()
-        except Exception:
-            self._log.exception("OF SDK > A subscription listener threw: %s", subscription_key(self.key.service, self.key.type, self.key.symbol))
+        """Calls the listener unless closed, logging instead of raising."""
+
+        def logged() -> None:
+            try:
+                call()
+            except Exception:
+                self._log.exception("OF SDK > A subscription listener threw: %s", subscription_key(self.key.service, self.key.type, self.key.symbol))
+
+        self._guard.run(logged)
 
     def fail(self, error: SubscriptionError) -> None:
         on_error = self.listener.on_error if self.listener is not None else None

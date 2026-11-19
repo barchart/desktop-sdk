@@ -442,6 +442,74 @@ class TestThreads:
         assert len(got) == count
         assert handle.state == "closed"
 
+    def test_close_from_another_thread_returns_once_the_running_callback_finished(self, create_sdk: CreateSdk) -> None:
+        sdk, client, _ = setup(create_sdk)
+        entered = threading.Event()
+        release = threading.Event()
+        order: list[str] = []
+
+        def on_event(_: QuoteEvent) -> None:
+            entered.set()
+            release.wait(5)
+            order.append("callback finished")
+
+        handle = sdk.subscribe_quote("ESZ26", Listener(on_event=on_event))
+        flush(sdk)
+        snapshot(client)
+        assert entered.wait(5)
+
+        def close() -> None:
+            handle.close()
+            order.append("close returned")
+
+        closer = threading.Thread(target=close)
+        closer.start()
+        # long enough for close to return, if it didn't wait
+        closer.join(0.05)
+        release.set()
+        closer.join(5)
+        assert order == ["callback finished", "close returned"]
+
+    def test_remove_from_another_thread_returns_once_the_running_listener_finished(self, create_sdk: CreateSdk) -> None:
+        sdk, client, _ = setup(create_sdk)
+        entered = threading.Event()
+        release = threading.Event()
+        order: list[str] = []
+
+        def on_message(*_: Any) -> None:
+            if not entered.is_set():
+                entered.set()
+                release.wait(5)
+                order.append("listener finished")
+
+        remove = sdk.raw.on_message(on_message)
+        bbo(client, 10000)
+        assert entered.wait(5)
+
+        def removing() -> None:
+            remove()
+            order.append("remove returned")
+
+        remover = threading.Thread(target=removing)
+        remover.start()
+        remover.join(0.05)
+        release.set()
+        remover.join(5)
+        assert order == ["listener finished", "remove returned"]
+
+    def test_a_removed_listener_gets_none_of_the_calls_queued_before_its_removal(self, create_sdk: CreateSdk) -> None:
+        sdk, client, _ = setup(create_sdk)
+        calls: list[Any] = []
+        remove = sdk.raw.on_message(lambda message, _: calls.append(message))
+        release = threading.Event()
+        block_delivery(sdk, release)
+        bbo(client, 10000)
+        bbo(client, 10025)
+        remove()
+        release.set()
+        flush(sdk)
+        assert calls == []
+
     def test_stays_consistent_with_many_threads_subscribing_closing_and_reading(self, create_sdk: CreateSdk) -> None:
         sdk, client, _ = setup(create_sdk)
         errors: list[BaseException] = []
