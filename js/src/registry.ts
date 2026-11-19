@@ -247,9 +247,12 @@ export class Registry {
         return matched;
     }
 
-    /** Whether any entry's successful responses named the market (state or raw: its state must stay while one does). */
-    hasId(marketId: string): boolean {
-        return (this.#entriesByMarket.get(marketId)?.size ?? 0) > 0;
+    /**
+     * Whether any entry's successful responses named the market (state or raw: its state must stay while one does);
+     * with `type`, any entry of that subscription type.
+     */
+    hasId(marketId: string, type?: SubscriptionType): boolean {
+        return [...(this.#entriesByMarket.get(marketId) ?? [])].some((entry) => type === undefined || entry.type === type);
     }
 
     /** Subscribers that take raw messages (raw ones, and state ones with `onMessage`) on entries that named this market. */

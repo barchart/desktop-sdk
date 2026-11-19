@@ -588,8 +588,8 @@ class DesktopSdk:
             return None if instrument is None else self._get_named(instrument, symbol)
 
     def get_quote(self, symbol: str) -> QuoteRecord | None:
-        """The current quote, as the last quote event delivered it. For the same values as strings, use
-        `get_formatted_quote`.
+        """The current quote, with every message applied (ahead of the last event when events are coalesced). For the same
+        values as strings, use `get_formatted_quote`.
 
         Args:
             symbol: A subscribed symbol (an alias included), or the definition symbol of an instrument a subscription
@@ -618,22 +618,23 @@ class DesktopSdk:
         return FormattedQuote(quote, instrument) if quote is not None and instrument is not None else None
 
     def get_book(self, symbol: str) -> Book | None:
-        """The current order book, as the last book event delivered it.
+        """The current order book, with every message applied (ahead of the last event when events are coalesced).
 
-        Each side has the instrument's `book_depth` levels, best price first; an empty level has price and size 0.
+        Each side has the instrument's `book_depth` levels, best price first; an empty level has price and size 0. Only a
+        depth subscription keeps the book current, so it goes with the instrument's last one.
 
         Args:
             symbol: A subscribed symbol (an alias included), or the definition symbol of an instrument a subscription
                 holds.
 
         Returns:
-            The book; None until the SDK has one, or when no subscription holds it.
+            The book; None until the SDK has one, or when no depth subscription holds it.
         """
         with self._lock:
             return self._store.get_book_by_id(self._market_id_of(symbol))
 
     def get_cumulative_volume(self, symbol: str) -> tuple[PriceVolume, ...] | None:
-        """The volume traded at each price, as the last cumulative volume event delivered it.
+        """The volume traded at each price, with every message applied (ahead of the last event when events are coalesced).
 
         Args:
             symbol: A subscribed symbol (an alias included), or the definition symbol of an instrument a subscription
@@ -829,6 +830,9 @@ class DesktopSdk:
                     if instrument is not None:
                         maybe_removed[instrument.definition.symbol] = None
                     self._try_remove_id(market_id)
+                    # only a depth subscription keeps the book current, so without one it would go stale
+                    if removed.type == openfeed_api_pb2.DEPTH_PRICE and not self._registry.has_id(market_id, openfeed_api_pb2.DEPTH_PRICE):
+                        self._store.remove_book(market_id)
 
         calls: list[_Call] = [
             partial(listener, symbol) for symbol in maybe_removed if not self._is_subscribed(symbol) for listener in self._removed_listeners.values()

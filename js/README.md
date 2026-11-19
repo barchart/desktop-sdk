@@ -53,7 +53,7 @@ The connection state is `logged-out`, `connecting`, `connected`, `disconnected` 
 | Method | You get | On each change |
 |---|---|---|
 | `subscribeQuote(symbol, listener, service?)` | `QuoteEvent`: `quote`, `formatted` | a snapshot, or an update that changed the quote |
-| `subscribeDepth(symbol, listener, service?)` | `BookEvent`: `book` (the whole book) | a snapshot with depth, or a depth update |
+| `subscribeDepth(symbol, listener, service?)` | `BookEvent`: `book` (the whole book) | a snapshot with depth, a depth update, or a cleared book |
 | `subscribeCumulativeVolume(symbol, listener, service?)` | `CumulativeVolumeEvent`: `levels`, `changed` | trades that changed the volume at a price |
 
 Every event also has `symbol`, `instrument`, `kind` and `raw`, the Openfeed message that caused it. `kind` is:

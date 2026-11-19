@@ -66,7 +66,7 @@ The current state for a symbol, with every message applied; `undefined` until th
 | `getInstrument(symbol)` | `Instrument` |
 | `getQuote(symbol)` | `QuoteRecord` |
 | `getFormattedQuote(symbol)` | `FormattedQuote` |
-| `getBook(symbol)` | `Book` |
+| `getBook(symbol)` | `Book`, while a depth subscription holds the instrument: the book goes with the last one, since nothing else keeps it current |
 | `getCumulativeVolume(symbol)` | `PriceVolume[]`, ascending by price |
 
 ## 4. Raw access
@@ -184,7 +184,7 @@ Fields are formatted when read. `JSON.stringify(formatted)` gives every view's v
 
 | Type | |
 |---|---|
-| `Book` | `{ bids: PriceLevel[], asks: PriceLevel[] }`, each side `bookDepth` long. A level outside it, in a snapshot or an update, is skipped and logged as an error. |
+| `Book` | `{ bids: PriceLevel[], asks: PriceLevel[] }`, each side `bookDepth` long. A level outside it, in a snapshot or an update, is skipped and logged as an error. Openfeed's `ClearBook` empties every level, and depth updates after a snapshot of an empty book build on an empty one. |
 | `PriceLevel` | `{ price, size, orderCount? }`; an empty slot is `{ price: 0, size: 0 }`. |
 | `PriceVolume` | `{ price, volume }` |
 | `TradeDate` | A date without a time: `year`, `month` (1–12), `day`, `equals()`, `toString()` as `"YYYY-MM-DD"`. |

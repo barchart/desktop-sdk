@@ -1,4 +1,4 @@
-"""Book: book_from_snapshot and apply_depth."""
+"""Book: empty_book, book_from_snapshot and apply_depth."""
 
 import logging
 from collections.abc import Sequence
@@ -42,6 +42,11 @@ _EMPTY_LEVEL = PriceLevel(price=0.0, size=0)
 
 def _to_level(level: openfeed_pb2.AddPriceLevel | openfeed_pb2.ModifyPriceLevel, i: Instrument) -> PriceLevel:
     return PriceLevel(price=i.price(level.price), size=i.quantity(level.quantity), order_count=level.orderCount or None)
+
+
+def empty_book(i: Instrument) -> Book:
+    """A book with every level empty: what `ClearBook` leaves, and what depth updates start from without a book."""
+    return Book(bids=(_EMPTY_LEVEL,) * i.book_depth, asks=(_EMPTY_LEVEL,) * i.book_depth)
 
 
 def book_from_snapshot(levels: Sequence[openfeed_pb2.AddPriceLevel], i: Instrument, log: logging.Logger) -> Book | None:

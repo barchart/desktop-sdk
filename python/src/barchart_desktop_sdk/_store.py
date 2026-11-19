@@ -7,7 +7,7 @@ from typing import Literal
 
 from openfeed.generated import openfeed_api_pb2, openfeed_instrument_pb2, openfeed_pb2
 
-from ._book import Book, apply_depth, book_from_snapshot
+from ._book import Book, apply_depth, book_from_snapshot, empty_book
 from ._cumulative import CumulativeVolumeStep, last_steps, seed_steps, trade_steps
 from ._formatted import FormattedQuote
 from ._instrument import Instrument, create_instrument
@@ -134,6 +134,14 @@ class InstrumentStore:
 
     def clear(self) -> None:
         self._instruments.clear()
+
+    def remove_book(self, market_id: str) -> None:
+        """Drops a market's book, once no depth subscription keeps it current: the next depth subscription starts from its
+        own snapshot, not a stale book.
+        """
+        market = self._instruments.get(market_id)
+        if market is not None:
+            market.book = None
 
     # Getters by marketId; None in, None out, so a lookup can be passed straight through.
 
@@ -266,15 +274,21 @@ class InstrumentStore:
             kind="update",
             parts=StateParts(
                 quote=QuotePart(quote=next_quote, formatted=FormattedQuote(next_quote, instrument)) if quote_changed else None,
-                depth=self._apply_depth(market, update) if kind == "depthPriceLevel" else None,
+                depth=self._update_book(market, update, kind),
                 cumulative_volume=_update_levels(market, steps),
             ),
         )
 
-    def _apply_depth(self, market: _InstrumentState, update: openfeed_pb2.MarketUpdate) -> DepthPart | None:
-        """Applies a depth update to the market's book; its part of the change, or None (with a warning) without a book."""
-        if market.book is None:
-            self._log.warning("No book found for %s", update.symbol or str(update.marketId))
+    def _update_book(self, market: _InstrumentState, update: openfeed_pb2.MarketUpdate, kind: str | None) -> DepthPart | None:
+        """Applies a depth update or `ClearBook` to the market's book; its part of the change, or None for any other update.
+        Depth updates without a book start from an empty one: a depth subscription's snapshot of an empty book has no
+        price levels, so it left none.
+        """
+        if kind == "depthPriceLevel":
+            book = market.book if market.book is not None else empty_book(market.instrument)
+            market.book = apply_depth(book, update.depthPriceLevel, market.instrument, update.symbol, self._log)
+        elif kind == "clearBook":
+            market.book = empty_book(market.instrument)
+        else:
             return None
-        market.book = apply_depth(market.book, update.depthPriceLevel, market.instrument, update.symbol, self._log)
         return DepthPart(book=market.book)

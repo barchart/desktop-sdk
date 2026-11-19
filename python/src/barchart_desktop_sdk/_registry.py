@@ -201,9 +201,11 @@ class Registry:
                         failures.extend((subscriber, error) for subscriber in dependent.subscribers)
         return ResponseResult(matched=matched, failures=failures)
 
-    def has_id(self, market_id: str) -> bool:
-        """Whether any entry's successful responses named the market (state or raw: its state must stay while one does)."""
-        return bool(self._entries_by_market.get(market_id))
+    def has_id(self, market_id: str, subscription_type: SubscriptionType | None = None) -> bool:
+        """Whether any entry's successful responses named the market (state or raw: its state must stay while one does);
+        with `subscription_type`, any entry of that subscription type.
+        """
+        return any(subscription_type is None or entry.type == subscription_type for entry in self._entries_by_market.get(market_id, ()))
 
     def get_message_subscribers_by_id(self, market_id: str) -> list[Subscriber]:
         """Subscribers that take raw messages (raw ones, and state ones with `on_message`) on entries that named this market."""

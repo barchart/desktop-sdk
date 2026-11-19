@@ -133,14 +133,61 @@ describe("depth updates", () => {
         expect(errors).toHaveLength(2);
     });
 
-    it("ignores depth without a book, with a warning, until a snapshot brings one", () => {
+    it("starts depth without a book from an empty one, as after a snapshot of an empty book", () => {
         const { logger, warnings } = recordingLogger();
         const store = new InstrumentStore(logger);
-        store.apply(message({ instrumentDefinition: definition({ bookDepth: 3 }) }));
+        store.apply(message({ instrumentDefinition: definition({ bookDepth: 2 }) }));
         store.apply(message({ marketSnapshot: { marketId: mid, tradeDate: 0, priceLevels: [] } }));
-        const change = defined(depth(store, add(BookSide.BID, 1, 10000, 1)));
-        expect(change.parts.depth).toBeUndefined();
         expect(store.getBookById("42")).toBeUndefined();
-        expect(warnings).toHaveLength(1);
+
+        const change = defined(depth(store, add(BookSide.BID, 1, 10000, 1)));
+        const { book } = defined(change.parts.depth);
+        expect(store.getBookById("42")).toBe(book);
+        expect([sizes(book.bids), sizes(book.asks)]).toEqual([
+            [
+                [100, 1],
+                [0, 0],
+            ],
+            [
+                [0, 0],
+                [0, 0],
+            ],
+        ]);
+        expect(warnings).toHaveLength(0);
+    });
+});
+
+describe("ClearBook", () => {
+    it("empties the book, keeping its depth, and the next depth update builds on the empty book", () => {
+        const { store } = setup();
+        const change = defined(store.apply(message({ marketUpdate: { marketId: mid, symbol: "ESZ26", clearBook: { transactionTime: toLong(0) } } })));
+        const { book } = defined(change.parts.depth);
+        expect(store.getBookById("42")).toBe(book);
+        expect(Object.isFrozen(book) && Object.isFrozen(book.bids)).toBe(true);
+        expect([sizes(book.bids), sizes(book.asks)]).toEqual([
+            [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+            ],
+            [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+            ],
+        ]);
+
+        depth(store, add(BookSide.OFFER, 1, 10050, 2));
+        expect(sizes(defined(store.getBookById("42")).asks)[0]).toEqual([100.5, 2]);
+        expect(sizes(defined(store.getBookById("42")).bids)[0]).toEqual([0, 0]);
+    });
+});
+
+describe("removeBook", () => {
+    it("drops the book only", () => {
+        const { store } = setup();
+        store.removeBook("42");
+        expect(store.getBookById("42")).toBeUndefined();
+        expect(store.getQuoteById("42")).toBeDefined();
     });
 });
