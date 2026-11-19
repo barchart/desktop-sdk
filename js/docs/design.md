@@ -64,7 +64,7 @@ One state per `marketId`, since a `marketId` is one listed instrument on its exc
 - **Snapshots and updates without a definition** are skipped: there's nothing to scale them with.
 - **Snapshots** replace the market's quote. They replace its book and cumulative volume only when they carry them (price levels, volume at price), since a snapshot of another subscription type on the same market doesn't. **Updates** go through the reducers below, once the market has had a snapshot.
 - **Lifetime:** the store never drops a market by itself. The facade drops it once no subscription names it (the registry's market index); a raw subscription such as a root names its instruments without linking them, and holds them while it's open. `logout` clears the whole store.
-- **`EXCHANGE_MOVE`** moves a market's state and its index entry to the new `marketId`.
+- **`EXCHANGE_MOVE`** moves a market's state and its index entry to the new `marketId`, and so do changes held for coalescing (§7). The action's new definition replaces the instrument.
 - **Freezing:** records, books (with their arrays and levels) and level lists are frozen as they're stored.
 
 **Reducers** are pure functions of `(state, message, instrument)` with no I/O, clock, logger or date library (the book's errors go to a logger passed in):
@@ -106,7 +106,7 @@ One entry per `(service, subscription type, symbol)`, in two layers:
 
 **Indexes:** entries by symbol and by market, updated wherever entries are created or deleted and wherever an entry's markets change, so every per-message lookup is a map lookup.
 
-**Definition symbols.** A definition for a market an entry names maps its `symbol` (which can be the exchange's, `ESZ6`) to the market, both ways. The facade falls back to it when no subscription under a symbol names a market: that's how a root subscription's instruments, which have no subscribed name, are found. It lives as long as the market is named: the last entry to leave the market takes it, a new definition replaces it, and an exchange move carries it to the new market.
+**Definition symbols.** A definition for a market an entry names maps its `symbol` (which can be the exchange's, `ESZ6`) to the market, both ways. The facade falls back to it when no subscription under a symbol names a market: that's how a root subscription's instruments, which have no subscribed name, are found. It lives as long as the market is named: the last entry to leave the market takes it, a new definition replaces it, and an exchange move replaces it with the new definition's, on the new market.
 
 **Dependencies.** A `CUMULATIVE_VOLUME` entry depends on `ALL` on `REAL_TIME` for its symbol: its own subscription only sends the seed, and the levels then change with the trades `ALL` carries. It's the same key a quote subscription uses by default, so they share one entry in either order. The dependent entries are kept on the dependency, so its failure reaches them: a subscriber sees its entry's own error, or else a failed dependency's, as one more error object with `requiredBy` set (kept per dependency error, so it's the same object everywhere). Each entry's own status stays as the server answered it, for diagnostics, and a dependency that recovers clears it.
 
@@ -141,7 +141,7 @@ One entry per `(service, subscription type, symbol)`, in two layers:
 | `logout()` | Nothing: the client is disposed, not unsubscribed from. Entries go back to `pending`, the store is cleared, subscribers stay. |
 | `login()` again, as anyone | `subscribe` for every entry. The previous login's errors are gone. |
 | `ALIAS_CHANGED` for `CL*1` | Nothing from the SDK. The alias stops naming the old contract; the server's repeated response names the new one, and its snapshot arrives as a `snapshot` event. |
-| `EXCHANGE_MOVE` | Nothing. The state and the named markets move to the new `marketId`. |
+| `EXCHANGE_MOVE` | Nothing. The state and the named markets move to the new `marketId`; the action's new definition replaces the instrument. |
 
 ## 9. Portability and fixtures
 

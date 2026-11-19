@@ -466,7 +466,7 @@ class TestInstrumentActions:
         client.receive(subscriptionResponse={"symbol": "ESZ26", "subscriptionType": "ALL", "marketId": 42, "status": {"result": "SUCCESS"}})
         client.receive(instrumentDefinition=definition())
         client.receive(marketSnapshot={"marketId": 42})
-        client.receive(instrumentAction={"action": "EXCHANGE_MOVE", "instrument": {"marketId": 42}, "newInstrument": {"marketId": 43}})
+        client.receive(instrumentAction={"action": "EXCHANGE_MOVE", "instrument": {"marketId": 42}, "newInstrument": definition(market_id=43)})
         client.receive(marketUpdate={"marketId": 43, "symbol": "ESZ26", "bbo": {"bidPrice": 10000, "offerPrice": 10025}})
         flush(sdk)
         quote = sdk.get_quote("ESZ26")

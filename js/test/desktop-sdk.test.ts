@@ -1,4 +1,4 @@
-import { BookSide, Result, Service, SubscriptionType as T, type OpenFeedListeners } from "@openfeed/sdk-js";
+import { ActionType, BookSide, Result, Service, SubscriptionType as T, type OpenFeedListeners } from "@openfeed/sdk-js";
 import Long from "long";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DesktopSdk, type BookEvent, type CumulativeVolumeEvent, type DesktopSdkOptions, type QuoteEvent } from "../src";
@@ -327,6 +327,44 @@ describe("coalesceIntervalMs", () => {
         ]);
         // the last message behind it
         expect(got.quote[1].raw.marketUpdate?.trades).toBeDefined();
+    });
+
+    it("makes every level a change when a snapshot without volume at price is held with a trade", async () => {
+        const { got } = await setup({ coalesceIntervalMs: 30 });
+        snapshot();
+        await sleep(45);
+        // a snapshot of another kind, such as a quote's after a reconnect, then a trade in the same interval
+        send({ marketSnapshot: { marketId: mid, tradeDate: 0, transactionTime: toLong(0), priceLevels: [] } });
+        trade(10050, 2);
+        await sleep(45);
+
+        const cv = defined(got.cv.at(-1));
+        expect(cv.kind).toBe("snapshot");
+        expect(pairs(cv.levels)).toEqual([
+            [100, 10],
+            [100.5, 2],
+        ]);
+        expect(pairs(cv.changed)).toEqual(pairs(cv.levels));
+    });
+
+    it("delivers what's held when the market moves exchanges, with the new instrument", async () => {
+        const { sdk, got } = await setup({ coalesceIntervalMs: 30 });
+        snapshot();
+        bbo(10000);
+        send({
+            instrumentAction: {
+                action: ActionType.EXCHANGE_MOVE,
+                oldAlias: "",
+                instrument: definition({ bookDepth: 2 }),
+                newInstrument: definition({ marketId: 43, bookDepth: 2 }),
+            },
+        });
+        await sleep(45);
+
+        expect([got.quote.length, got.book.length, got.cv.length]).toEqual([1, 1, 1]);
+        expect(got.quote[0].quote.bestBidOffer.bidPrice).toBe(100);
+        expect(got.quote[0].instrument.marketId).toBe("43");
+        expect(defined(sdk.getInstrument("ESZ26")).marketId).toBe("43");
     });
 
     it("drops what's held at logout", async () => {

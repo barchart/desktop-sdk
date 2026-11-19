@@ -474,6 +474,37 @@ class TestCoalescing:
         # the last message behind it
         assert got.quote[1].raw.marketUpdate.HasField("trades")
 
+    def test_makes_every_level_a_change_when_a_snapshot_without_volume_at_price_is_held_with_a_trade(self, create_sdk: CreateSdk) -> None:
+        sdk, client, got = setup(create_sdk, coalesce_interval_ms=50)
+        snapshot(client)
+        wait_until(lambda: got.volume)
+        # a snapshot of another kind, such as a quote's after a reconnect, then a trade in the same interval
+        client.receive(marketSnapshot={"marketId": 42})
+        trade(client, 10050, 2)
+        wait_until(lambda: len(got.volume) == 2)
+        flush(sdk)
+
+        volume = got.volume[-1]
+        assert volume.kind == "snapshot"
+        assert pairs(volume.levels) == [[100, 10], [100.5, 2]]
+        assert pairs(volume.changed) == pairs(volume.levels)
+
+    def test_delivers_whats_held_when_the_market_moves_exchanges_with_the_new_instrument(self, create_sdk: CreateSdk) -> None:
+        sdk, client, got = setup(create_sdk, coalesce_interval_ms=50)
+        snapshot(client)
+        bbo(client, 10000)
+        moved = definition(market_id=43, book_depth=2)
+        client.receive(instrumentAction={"action": "EXCHANGE_MOVE", "instrument": definition(book_depth=2), "newInstrument": moved})
+        wait_until(lambda: got.quote and got.book and got.volume)
+        flush(sdk)
+
+        assert [len(got.quote), len(got.book), len(got.volume)] == [1, 1, 1]
+        assert got.quote[0].quote.best_bid_offer.bid_price == 100
+        assert got.quote[0].instrument.market_id == "43"
+        instrument = sdk.get_instrument("ESZ26")
+        assert instrument is not None
+        assert instrument.market_id == "43"
+
     def test_drops_whats_held_at_logout(self, create_sdk: CreateSdk) -> None:
         sdk, client, got = setup(create_sdk, coalesce_interval_ms=30)
         snapshot(client)
