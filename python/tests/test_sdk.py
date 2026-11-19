@@ -184,6 +184,55 @@ class TestRawAccessAndLifetime:
         assert kinds == ["marketSnapshot"]
 
 
+class TestBook:
+    def test_goes_with_the_markets_last_depth_subscription_so_the_next_one_doesnt_start_from_a_stale_book(self, create_sdk: CreateSdk) -> None:
+        sdk = create_sdk()
+        sdk.login(CREDENTIALS)
+        sdk.subscribe_quote("ESZ26", Listener())
+        first = sdk.subscribe_depth("ESZ26", Listener())
+        flush(sdk)
+        client = get_client()
+        client.log_in()
+        respond(client, api.ALL)
+        respond(client, api.DEPTH_PRICE)
+        client.receive(instrumentDefinition=definition(book_depth=2))
+        snapshot(client)
+        assert sdk.get_book("ESZ26") is not None
+
+        first.close()
+        flush(sdk)
+        assert sdk.get_book("ESZ26") is None
+        assert sdk.get_quote("ESZ26") is not None
+
+        books: list[BookEvent] = []
+        sdk.subscribe_depth("ESZ26", Listener(on_event=books.append))
+        flush(sdk)
+        flush(sdk)
+        # no initial event from the old book: the first comes with the new subscription's snapshot
+        assert books == []
+        respond(client, api.DEPTH_PRICE)
+        snapshot(client)
+        flush(sdk)
+        assert [event.kind for event in books] == ["snapshot"]
+
+    def test_stays_while_another_depth_subscription_on_the_market_keeps_it_current(self, create_sdk: CreateSdk) -> None:
+        sdk = create_sdk()
+        sdk.login(CREDENTIALS)
+        by_contract = sdk.subscribe_depth("ESZ26", Listener())
+        sdk.subscribe_depth("ES*0", Listener())
+        flush(sdk)
+        client = get_client()
+        client.log_in()
+        respond(client, api.DEPTH_PRICE)
+        respond(client, api.DEPTH_PRICE, symbol="ES*0")
+        client.receive(instrumentDefinition=definition(book_depth=2))
+        snapshot(client)
+
+        by_contract.close()
+        flush(sdk)
+        assert sdk.get_book("ES*0") is not None
+
+
 class TestDelivery:
     def test_delivers_an_event_per_message_by_default(self, create_sdk: CreateSdk) -> None:
         sdk, client, got = setup(create_sdk)

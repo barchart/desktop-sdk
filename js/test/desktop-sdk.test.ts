@@ -267,6 +267,61 @@ describe("markets a subscription names", () => {
     });
 });
 
+describe("the book", () => {
+    const respondDepth = (symbol: string) => {
+        send({
+            subscriptionResponse: { symbol, subscriptionType: T.DEPTH_PRICE, unsubscribe: false, marketId: mid, status: { result: Result.SUCCESS } },
+        });
+    };
+
+    it("goes with the market's last depth subscription, so the next one doesn't start from a stale book", async () => {
+        const sdk = createSdk();
+        sdk.login({ url: "ws://test", username: "u", password: "p" });
+        sdk.subscribeQuote("ESZ26", {});
+        const first = sdk.subscribeDepth("ESZ26", {});
+        await sleep(0);
+        respond(T.ALL);
+        respondDepth("ESZ26");
+        send({ instrumentDefinition: definition({ bookDepth: 2 }) });
+        snapshot();
+        expect(sdk.getBook("ESZ26")).toBeDefined();
+
+        first.close();
+        await sleep(0);
+        expect(sdk.getBook("ESZ26")).toBeUndefined();
+        expect(sdk.getQuote("ESZ26")).toBeDefined();
+
+        const books: BookEvent[] = [];
+        sdk.subscribeDepth("ESZ26", {
+            onEvent: (e) => {
+                books.push(e);
+            },
+        });
+        await sleep(0);
+        // no initial event from the old book: the first comes with the new subscription's snapshot
+        expect(books).toHaveLength(0);
+        respondDepth("ESZ26");
+        snapshot();
+        expect(books.map((e) => e.kind)).toEqual(["snapshot"]);
+    });
+
+    it("stays while another depth subscription on the market keeps it current", async () => {
+        const sdk = createSdk();
+        sdk.login({ url: "ws://test", username: "u", password: "p" });
+        const byContract = sdk.subscribeDepth("ESZ26", {});
+        sdk.subscribeDepth("ES*0", {});
+        await sleep(0);
+        respondDepth("ESZ26");
+        respondDepth("ES*0");
+        send({ instrumentDefinition: definition({ bookDepth: 2 }) });
+        snapshot();
+
+        byContract.close();
+        await sleep(0);
+        expect(sdk.getBook("ES*0")).toBeDefined();
+    });
+});
+
 describe("delivery", () => {
     it("delivers an event per message by default", async () => {
         const { got } = await setup();

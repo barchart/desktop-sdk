@@ -113,13 +113,38 @@ def test_skips_a_snapshots_levels_outside_the_book_with_an_error() -> None:
     assert [r.levelname for r in records] == ["ERROR"] * 2
 
 
-def test_ignores_depth_without_a_book_with_a_warning_until_a_snapshot_brings_one() -> None:
+def test_starts_depth_without_a_book_from_an_empty_one_as_after_a_snapshot_of_an_empty_book() -> None:
     logger, warnings = recording_logger()
     store = InstrumentStore(logger)
-    store.apply(message(instrumentDefinition=definition(book_depth=3)))
+    store.apply(message(instrumentDefinition=definition(book_depth=2)))
     store.apply(message(marketSnapshot={"marketId": 42, "tradeDate": 0}))
+    assert store.get_book_by_id("42") is None
+
     change = depth(store, add("BID", 1, 10000, 1))
     assert change is not None
-    assert change.parts.depth is None
+    assert change.parts.depth is not None
+    assert store.get_book_by_id("42") is change.parts.depth.book
+    assert sizes(book(store).bids) == [[100, 1], [0, 0]]
+    assert sizes(book(store).asks) == [[0, 0], [0, 0]]
+    assert warnings == []
+
+
+def test_clear_book_empties_the_book_keeping_its_depth_and_the_next_depth_update_builds_on_it() -> None:
+    store, _ = setup()
+    change = store.apply(message(marketUpdate={"marketId": 42, "symbol": "ESZ26", "clearBook": {"transactionTime": 0}}))
+    assert change is not None
+    assert change.parts.depth is not None
+    assert store.get_book_by_id("42") is change.parts.depth.book
+    assert sizes(book(store).bids) == [[0, 0]] * 3
+    assert sizes(book(store).asks) == [[0, 0]] * 3
+
+    depth(store, add("OFFER", 1, 10050, 2))
+    assert sizes(book(store).asks)[0] == [100.5, 2]
+    assert sizes(book(store).bids)[0] == [0, 0]
+
+
+def test_remove_book_drops_the_book_only() -> None:
+    store, _ = setup()
+    store.remove_book("42")
     assert store.get_book_by_id("42") is None
-    assert len(warnings) == 1
+    assert store.get_quote_by_id("42") is not None

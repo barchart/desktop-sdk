@@ -32,14 +32,19 @@ const toLevel = (level: { price: Long; quantity: Long; orderCount: number }, i: 
     orderCount: level.orderCount === 0 ? undefined : level.orderCount,
 });
 
+/** A book with every level empty: what `ClearBook` leaves, and what depth updates start from without a book. */
+export const emptyBook = (i: Instrument): Book => ({
+    bids: Array.from({ length: i.bookDepth }, emptyLevel),
+    asks: Array.from({ length: i.bookDepth }, emptyLevel),
+});
+
 /** No book unless the snapshot has price levels. Levels outside the book's depth are skipped, with an error. */
 export const bookFromSnapshot = (levels: AddPriceLevel[], i: Instrument, log: SdkLogger): Book | null => {
     if (!levels.length) {
         return null;
     }
 
-    const bids = Array.from({ length: i.bookDepth }, emptyLevel);
-    const asks = Array.from({ length: i.bookDepth }, emptyLevel);
+    const { bids, asks } = emptyBook(i);
 
     const sides = new Map([
         [BookSide.BID, bids],

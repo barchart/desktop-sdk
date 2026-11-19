@@ -534,7 +534,8 @@ export class DesktopSdk {
     }
 
     /**
-     * The current quote, as the last quote event delivered it. For the same values as strings, use
+     * The current quote, with every message applied (ahead of the last event when events are coalesced). For the
+     * same values as strings, use
      * {@link DesktopSdk.getFormattedQuote}.
      *
      * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
@@ -560,19 +561,21 @@ export class DesktopSdk {
     }
 
     /**
-     * The current order book, as the last book event delivered it. Each side has the instrument's `bookDepth` levels,
-     * best price first; an empty level has price and size 0.
+     * The current order book, with every message applied (ahead of the last event when events are coalesced). Each
+     * side has the instrument's `bookDepth` levels, best price first; an empty level has price and size 0. Only a
+     * depth subscription keeps the book current, so it goes with the instrument's last one.
      *
      * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
      * subscription holds.
-     * @returns The book, frozen; `undefined` until the SDK has one, or when no subscription holds it.
+     * @returns The book, frozen; `undefined` until the SDK has one, or when no depth subscription holds it.
      */
     getBook(symbol: string): Book | undefined {
         return this.#store.getBookById(this.#marketIdOf(symbol));
     }
 
     /**
-     * The volume traded at each price, as the last cumulative volume event delivered it.
+     * The volume traded at each price, with every message applied (ahead of the last event when events are
+     * coalesced).
      *
      * @param symbol - A subscribed symbol (an alias included), or the definition symbol of an instrument a
      * subscription holds.
@@ -660,8 +663,8 @@ export class DesktopSdk {
      * 1. subscribes: each joins its entry (created, and sent when logged in, if it's new). A subscriber closed in the
      *    same batch is skipped, so a subscribe and close in one task never reach the registry or the wire;
      * 2. closes: each leaves its entry; at zero references the entry is unsubscribed and removed, and symbols left
-     *    without a state subscription, or a dependency, lose their instrument. Symbols no subscription has any more
-     *    are reported to onRemoved. Because subscribes come first, a remount (one subscriber closes, another
+     *    without a state subscription, or a dependency, lose their instrument, and markets without a depth
+     *    subscription lose their book. Symbols no subscription has any more are reported to onRemoved. Because subscribes come first, a remount (one subscriber closes, another
      *    subscribes to the same symbol) never takes the count to zero;
      * 3. first deliveries for the subscribers that opened: the entry's error, or the current state as an `initial`
      *    event. They come after `subscribe` returned: callers rely on holding the handle first.
@@ -699,6 +702,10 @@ export class DesktopSdk {
                         maybeRemoved.add(own);
                     }
                     this.#tryRemoveId(marketId);
+                    // only a depth subscription keeps the book current, so without one it would go stale
+                    if (removed.type === SubscriptionType.DEPTH_PRICE && !this.#registry.hasId(marketId, SubscriptionType.DEPTH_PRICE)) {
+                        this.#store.removeBook(marketId);
+                    }
                 }
             }
         }

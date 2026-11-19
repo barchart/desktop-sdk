@@ -1,8 +1,8 @@
 // Internal: state per instrument, keyed by marketId: one listed instrument on its exchange. Not exported from index.ts.
-import type { DepthPriceLevel, InstrumentDefinition, MarketSnapshot, MarketUpdate, OpenfeedGatewayMessage } from "@openfeed/sdk-js";
+import type { InstrumentDefinition, MarketSnapshot, MarketUpdate, OpenfeedGatewayMessage } from "@openfeed/sdk-js";
 import { formatQuote, type FormattedQuote } from "./formatted-quote";
 import { createInstrument, type Instrument } from "./instrument";
-import { applyDepth, bookFromSnapshot, type Book } from "./reducers/book";
+import { applyDepth, bookFromSnapshot, emptyBook, type Book } from "./reducers/book";
 import { lastSteps, seedSteps, tradeSteps, type CumulativeVolumeStep } from "./reducers/cumulative";
 import { applySnapshot, applyUpdate, type QuoteRecord } from "./reducers/quote";
 import type { LastMessages, PriceVolume, SdkLogger } from "./types";
@@ -106,6 +106,17 @@ export class InstrumentStore {
 
     clear() {
         this.#instruments.clear();
+    }
+
+    /**
+     * Drops a market's book, once no depth subscription keeps it current: the next depth subscription starts from its
+     * own snapshot, not a stale book.
+     */
+    removeBook(marketId: string) {
+        const market = this.#instruments.get(marketId);
+        if (market) {
+            market.book = undefined;
+        }
     }
 
     // Getters by marketId; undefined in, undefined out, so a lookup can be passed straight through.
@@ -256,19 +267,26 @@ export class InstrumentStore {
             parts: {
                 // Object.freeze froze `next` itself, so it's market.quote
                 quote: quoteChanged ? { quote: next, formatted: formatQuote(next, instrument) } : undefined,
-                depth: update.depthPriceLevel ? this.#applyDepth(market, update, update.depthPriceLevel) : undefined,
+                depth: this.#updateBook(market, update),
                 cumulativeVolume: updateLevels(market, steps),
             },
         };
     }
 
-    /** Applies a depth update to the market's book; its part of the change, or undefined (with a warning) without a book. */
-    #applyDepth(market: InstrumentState, update: MarketUpdate, depth: DepthPriceLevel): StateParts["depth"] {
-        if (!market.book) {
-            this.log.warn("OF SDK > No book found for", update.symbol || update.marketId.toString());
+    /**
+     * Applies a depth update or `ClearBook` to the market's book; its part of the change, or undefined for any other
+     * update. Depth updates without a book start from an empty one: a depth subscription's snapshot of an empty book
+     * has no price levels, so it left none.
+     */
+    #updateBook(market: InstrumentState, update: MarketUpdate): StateParts["depth"] {
+        if (update.depthPriceLevel) {
+            const book = market.book ?? emptyBook(market.instrument);
+            market.book = freezeBook(applyDepth(book, update.depthPriceLevel, market.instrument, update.symbol, this.log));
+        } else if (update.clearBook) {
+            market.book = freezeBook(emptyBook(market.instrument));
+        } else {
             return undefined;
         }
-        market.book = freezeBook(applyDepth(market.book, depth, market.instrument, update.symbol, this.log));
         return { book: market.book };
     }
 }

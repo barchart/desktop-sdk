@@ -29,7 +29,7 @@ src/
   resolution-source.ts a promise settled from outside, for the loops' wake-ups and requestSnapshot
   reducers/
     quote.ts           QuoteRecord: applySnapshot, applyUpdate
-    book.ts            Book: bookFromSnapshot, applyDepth
+    book.ts            Book: emptyBook, bookFromSnapshot, applyDepth
     cumulative.ts      cumulative volume as ordered steps: seed, trades, last
 test/                  Vitest: reducers, formatting, store, registry, facade, coalescing
 docs/                  the reference and this document
@@ -63,6 +63,7 @@ One state per `marketId`, since a `marketId` is one listed instrument on its exc
 - **Definitions** create a market, or replace its instrument and keep its state.
 - **Snapshots and updates without a definition** are skipped: there's nothing to scale them with.
 - **Snapshots** replace the market's quote. They replace its book and cumulative volume only when they carry them (price levels, volume at price), since a snapshot of another subscription type on the same market doesn't. **Updates** go through the reducers below, once the market has had a snapshot.
+- **The book** is only current while a depth subscription names the market, so it goes with the last one; the next starts from its own snapshot. An empty book's snapshot has no price levels either, so it leaves no book, and depth updates without one start from an empty book. `ClearBook` empties it.
 - **Lifetime:** the store never drops a market by itself. The facade drops it once no subscription names it (the registry's market index); a raw subscription such as a root names its instruments without linking them, and holds them while it's open. `logout` clears the whole store.
 - **`EXCHANGE_MOVE`** moves a market's state and its index entry to the new `marketId`, and so do changes held for coalescing (§7). The action's new definition replaces the instrument.
 - **Freezing:** records, books (with their arrays and levels) and level lists are frozen as they're stored.
