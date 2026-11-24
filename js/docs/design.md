@@ -40,7 +40,7 @@ docs/                  the reference and this document
 The SDK uses the Openfeed client as it is; how the client connects, reconnects and resubscribes is in [its documentation](https://github.com/openfeed-org/sdk-js).
 
 - **One client per login.** `login` constructs an `OpenFeedClient`, since it takes its credentials and listeners in its constructor; `logout` disposes it.
-- **Subscribing:** `client.subscribe` and `client.unsubscribe`. Responses are matched by symbol and subscription type, since the client's id is local to it. `client.unsubscribe` is called in `try/catch`.
+- **Subscribing:** `client.subscribe` and `client.unsubscribe`. Responses are matched by the client's id, which `@openfeed/sdk-js` sends as the correlation id, within their symbol and subscription type (§6). `client.unsubscribe` is called in `try/catch`.
 - **Messages** come through the client's `onMessageWithMetadata`. The core uses only protocol fields; the metadata is only passed on to raw listeners.
 - **Connection state and heartbeats** come from the client's listeners.
 
@@ -100,7 +100,7 @@ One entry per `(service, subscription type, symbol)`, in two layers:
 - **`acquire`:** finds the entry for the key, or creates it and takes references on its dependencies; sends a new entry when a client is attached; counts the reference.
 - **`remove`:** gives back a reference. At zero the entry is unsubscribed (when a client is attached; `client.unsubscribe` in `try/catch`), deleted, and its dependencies give back theirs, which can remove them too.
 - **`attach(client)`** at login sends every entry on the new client. **`detach()`** at logout or rejected credentials resets every entry's wire layer, without unsubscribing: the client is being thrown away.
-- **Responses** are matched by symbol and type. `SUCCESS` makes the entry `active` and records the response's `marketId` (0 names nothing). Anything else makes it `error`, and calls every subscriber's `onError`. Errors on unsubscribe responses are ignored.
+- **Responses** go to the entries with their symbol and type, and of those to the one whose client id is their correlation id, so two services on one symbol get their own answers. When no client id matches, they go to every entry with the symbol and type. `SUCCESS` makes the entry `active` and records the response's `marketId` (0 names nothing). Anything else makes it `error`, and calls every subscriber's `onError`. Errors on unsubscribe responses are ignored.
 - **Instrument actions:** `ALIAS_CHANGED` makes the alias's entries stop naming the old market (the server's repeated response names the new one); `EXCHANGE_MOVE` moves the named markets with the instrument.
 
 **Links.** A symbol links to the markets its entries named only while a state subscriber, or a dependent entry, is on one of them. That's computed, not stored, so it stops the moment the last one leaves. Raw subscribers never link, so a root subscription (one symbol, many markets) doesn't move its symbol from market to market.

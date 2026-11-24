@@ -52,6 +52,7 @@ const subscribe = (registry: Registry, service: S, type: T, method: Method) => {
 
 const response = (type: T, ok: boolean) =>
     ({
+        correlationId: Long.fromNumber(0),
         symbol: "ESZ26",
         subscriptionType: type,
         unsubscribe: false,
@@ -91,6 +92,7 @@ describe("a subscription error", () => {
         const { registry } = setup();
         const depth = subscribe(registry, S.REAL_TIME, T.DEPTH_PRICE, "depth");
         registry.onResponse({
+            correlationId: Long.fromNumber(0),
             symbol: "ESZ26",
             subscriptionType: T.DEPTH_PRICE,
             unsubscribe: false,
@@ -176,6 +178,7 @@ describe("definition symbols", () => {
     const naming = (registry: Registry, symbol: string, marketId: number) => {
         const entry = registry.acquire(S.REAL_TIME, T.ALL, symbol, []);
         registry.onResponse({
+            correlationId: Long.fromNumber(0),
             symbol,
             subscriptionType: T.ALL,
             unsubscribe: false,

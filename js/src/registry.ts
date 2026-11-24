@@ -206,13 +206,19 @@ export class Registry {
         this.#definitionSymbolsByMarket.clear();
     }
 
-    /** Matches a response to its entries by symbol and type (the client's ids aren't on the wire). */
+    /**
+     * Matches a response to its entries: those with its symbol and type, and of those, the one whose client id is the
+     * response's correlation id, which tells services apart. Openfeed clients that send another correlation id than
+     * the subscription's own match none, and then it's every entry with the symbol and type.
+     */
     onResponse(response: SubscriptionResponse): Entry[] {
         // errors on unsubscribe responses are ignored
         if (response.unsubscribe) {
             return [];
         }
-        const matched = [...(this.#entriesBySymbol.get(response.symbol) ?? [])].filter((e) => e.type === response.subscriptionType);
+        const candidates = [...(this.#entriesBySymbol.get(response.symbol) ?? [])].filter((e) => e.type === response.subscriptionType);
+        const byId = candidates.filter((e) => e.clientId?.equals(response.correlationId));
+        const matched = byId.length ? byId : candidates;
 
         for (const entry of matched) {
             entry.response = response;

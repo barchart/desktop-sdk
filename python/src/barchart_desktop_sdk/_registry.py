@@ -173,11 +173,16 @@ class Registry:
         self._definition_symbols_by_market.clear()
 
     def on_response(self, response: openfeed_api_pb2.SubscriptionResponse) -> ResponseResult:
-        """Matches a response to its entries by symbol and type: the same symbol and type on two services get the same answer."""
+        """Matches a response to its entries: those with its symbol and type, and of those, the one whose client id is the
+        response's correlation id, which tells services apart. A response whose correlation id matches none, such as one
+        still arriving for a closed subscription, goes to every entry with the symbol and type.
+        """
         # errors on unsubscribe responses are ignored
         if response.unsubscribe:
             return ResponseResult(matched=[], failures=[])
-        matched = [entry for entry in self._entries_by_symbol.get(response.symbol, ()) if entry.type == response.subscriptionType]
+        candidates = [entry for entry in self._entries_by_symbol.get(response.symbol, ()) if entry.type == response.subscriptionType]
+        by_id = [entry for entry in candidates if entry.client_id == response.correlationId]
+        matched = by_id or candidates
         failures: list[tuple[Subscriber, SubscriptionError]] = []
 
         for entry in matched:
