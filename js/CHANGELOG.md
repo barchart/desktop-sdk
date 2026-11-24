@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.2](https://github.com/barchart/desktop-sdk/compare/js-v0.3.1...js-v0.3.2) (2026-11-24)
+
+
+### Bug Fixes
+
+* add subscription responses by correlation id ([19d70d7](https://github.com/barchart/desktop-sdk/commit/19d70d7f9a647fe0cd0699870e15b4b3ef057c0e))
+* format prices for any denominator, and reject whenConnected() after rejected credentials ([756bf48](https://github.com/barchart/desktop-sdk/commit/756bf488c61645fd3e643c1d5cbaa2cb48c83d0b))
+* keep coalesced cumulative volume and exchange-moved events complete ([6e98fc4](https://github.com/barchart/desktop-sdk/commit/6e98fc426cee73adf7db75f324af6d90f964b910))
+* keep the order book in step with depth subscriptions and ClearBook ([ab1e134](https://github.com/barchart/desktop-sdk/commit/ab1e134f9397cc3082b9fc19b575a194cd64db1b))
+
 ## [0.3.1](https://github.com/barchart/desktop-sdk/compare/js-v0.3.0...js-v0.3.1) (2026-11-18)
 
 
