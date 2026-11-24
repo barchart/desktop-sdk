@@ -51,7 +51,7 @@ __metadata:
   dependencies:
     "@arethetypeswrong/cli": "npm:0.18.5"
     "@eslint/js": "npm:10.0.1"
-    "@openfeed/sdk-js": "npm:1.8.2"
+    "@openfeed/sdk-js": "npm:1.8.3"
     eslint: "npm:10.13.0"
     eslint-config-prettier: "npm:10.1.8"
     lint-staged: "npm:17.6.0"
@@ -67,7 +67,7 @@ __metadata:
     vite: "npm:8.3.5"
     vitest: "npm:5.0.5"
   peerDependencies:
-    "@openfeed/sdk-js": ^1.8.2
+    "@openfeed/sdk-js": ^1.8.3
     long: ^5.3.2
   languageName: unknown
   linkType: soft
@@ -333,15 +333,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openfeed/sdk-js@npm:1.8.2":
-  version: 1.8.2
-  resolution: "@openfeed/sdk-js@npm:1.8.2"
+"@openfeed/sdk-js@npm:1.8.3":
+  version: 1.8.3
+  resolution: "@openfeed/sdk-js@npm:1.8.3"
   dependencies:
     "@bufbuild/protobuf": "npm:^2.14.1"
     isomorphic-ws: "npm:^5.0.0"
     long: "npm:^5.3.2"
     ws: "npm:^8.22.1"
-  checksum: 10c0/90e13dd2dbe398704cd7ac5731bf1be06c5dff7c957278440404283a5a8c5abc00c9c7090e8d14270e76126c89fdf760965e50ac57c824ecab100508405cbf99
+  checksum: 10c0/4679b5c1591cb574031e92a269998b933ce76aac3e1762c99634cbbfdeb54d96961bf0a47d3c1bd1a94009cec4ee2a8b0248b477b7fea9fb487ce21b895b83fe
   languageName: node
   linkType: hard
 

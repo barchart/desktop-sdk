@@ -184,6 +184,38 @@ class TestRawAccessAndLifetime:
         assert kinds == ["marketSnapshot"]
 
 
+class TestSubscriptionResponses:
+    def test_reach_only_the_service_whose_request_they_answer_by_correlation_id(self, create_sdk: CreateSdk) -> None:
+        sdk = create_sdk()
+        sdk.login(CREDENTIALS)
+        errors: list[str] = []
+        real_time = sdk.subscribe_quote("ESZ26", Listener(on_error=lambda _: errors.append("REAL_TIME")))
+        delayed = sdk.subscribe_quote("ESZ26", Listener(on_error=lambda _: errors.append("DELAYED")), service=proto.DELAYED)
+        flush(sdk)
+        client = get_client()
+        client.log_in()
+        wait_until(lambda: len(client.subscriptions) == 2)
+
+        def answer(service: int, result: str) -> None:
+            sent = next(s for s in client.subscriptions if s.service == service)
+            client.receive(
+                subscriptionResponse={
+                    "correlationId": sent.correlationId,
+                    "symbol": "ESZ26",
+                    "subscriptionType": "ALL",
+                    "marketId": 42,
+                    "status": {"result": result},
+                }
+            )
+
+        answer(proto.REAL_TIME, "INSUFFICIENT_PRIVILEGES")
+        answer(proto.DELAYED, "SUCCESS")
+        flush(sdk)
+
+        assert errors == ["REAL_TIME"]
+        assert (real_time.state, delayed.state) == ("error", "active")
+
+
 class TestBook:
     def test_goes_with_the_markets_last_depth_subscription_so_the_next_one_doesnt_start_from_a_stale_book(self, create_sdk: CreateSdk) -> None:
         sdk = create_sdk()

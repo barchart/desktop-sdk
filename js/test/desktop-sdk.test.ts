@@ -6,11 +6,15 @@ import { defined, definition, ignore, level, message, pairs, quiet, sleep, toLon
 
 // The Openfeed client, replaced by one that keeps its listeners, so tests can feed messages to the SDK, and records
 // the calls it gets.
-const clients = vi.hoisted(() => ({ last: undefined as { listeners: OpenFeedListeners } | undefined }));
+const clients = vi.hoisted(() => ({
+    last: undefined as { listeners: OpenFeedListeners; subscribed: { service: Service; id: Long }[] } | undefined,
+}));
 vi.mock("@openfeed/sdk-js", async (importOriginal) => ({
     ...(await importOriginal<typeof import("@openfeed/sdk-js")>()),
     OpenFeedClient: class {
         subscriptions = 0;
+        /** Each subscribe's service and the id it returned, which a newer client also sends as the correlation id. */
+        readonly subscribed: { service: Service; id: Long }[] = [];
         readonly unsubscribed: Long[] = [];
         disposed = false;
 
@@ -23,9 +27,11 @@ vi.mock("@openfeed/sdk-js", async (importOriginal) => ({
             clients.last = this;
         }
 
-        subscribe() {
+        subscribe(service: Service) {
             this.subscriptions += 1;
-            return Long.fromNumber(this.subscriptions);
+            const id = Long.fromNumber(this.subscriptions);
+            this.subscribed.push({ service, id });
+            return id;
         }
 
         unsubscribe(id: Long) {
@@ -47,6 +53,7 @@ const send = (fields: object): void => {
 const respond = (type: T) => {
     send({
         subscriptionResponse: {
+            correlationId: toLong(0),
             symbol: "ESZ26",
             subscriptionType: type,
             unsubscribe: false,
@@ -171,6 +178,46 @@ describe("raw access and lifetime", () => {
     });
 });
 
+describe("subscription responses", () => {
+    it("reach only the service whose request they answer, by correlation id", async () => {
+        const sdk = createSdk();
+        sdk.login({ url: "ws://test", username: "u", password: "p" });
+        const errors: string[] = [];
+        const realTime = sdk.subscribeQuote("ESZ26", { onError: () => errors.push("REAL_TIME") });
+        const delayed = sdk.subscribeQuote("ESZ26", { onError: () => errors.push("DELAYED") }, Service.DELAYED);
+        await sleep(0);
+        const idOf = (service: Service) => defined(defined(clients.last).subscribed.find((s) => s.service === service)).id;
+        const answer = (service: Service, result: Result) => {
+            send({
+                subscriptionResponse: {
+                    correlationId: idOf(service),
+                    symbol: "ESZ26",
+                    subscriptionType: T.ALL,
+                    unsubscribe: false,
+                    marketId: mid,
+                    status: { result, message: "" },
+                },
+            });
+        };
+        answer(Service.REAL_TIME, Result.INSUFFICIENT_PRIVILEGES);
+        answer(Service.DELAYED, Result.SUCCESS);
+        await sleep(0);
+
+        expect(errors).toEqual(["REAL_TIME"]);
+        expect([realTime.state, delayed.state]).toEqual(["error", "active"]);
+    });
+
+    it("go to every entry with their symbol and type when their correlation id matches none", async () => {
+        const sdk = createSdk();
+        sdk.login({ url: "ws://test", username: "u", password: "p" });
+        const quote = sdk.subscribeQuote("ESZ26", {});
+        await sleep(0);
+        // the shared respond sends no correlation id, as a client that sent its own per connection would look
+        respond(T.ALL);
+        expect(quote.state).toBe("active");
+    });
+});
+
 describe("whenConnected", () => {
     it("rejects the waiters when the credentials are rejected, and any call after, at once", async () => {
         const sdk = createSdk();
@@ -199,7 +246,14 @@ describe("an instrument's symbol", () => {
         await sleep(0);
         for (const symbol of ["ESZ26", "ES*1"]) {
             send({
-                subscriptionResponse: { symbol, subscriptionType: T.ALL, unsubscribe: false, marketId: mid, status: { result: Result.SUCCESS } },
+                subscriptionResponse: {
+                    correlationId: toLong(0),
+                    symbol,
+                    subscriptionType: T.ALL,
+                    unsubscribe: false,
+                    marketId: mid,
+                    status: { result: Result.SUCCESS },
+                },
             });
         }
         send({ instrumentDefinition: definition({ symbol: "ESZ6" }) });
@@ -231,6 +285,7 @@ describe("markets a subscription names", () => {
     const uds = (marketId: number, symbol: string) => {
         send({
             subscriptionResponse: {
+                correlationId: toLong(0),
                 symbol: "ZC^UDS",
                 subscriptionType: T.ALL,
                 unsubscribe: false,
@@ -283,7 +338,14 @@ describe("markets a subscription names", () => {
 describe("the book", () => {
     const respondDepth = (symbol: string) => {
         send({
-            subscriptionResponse: { symbol, subscriptionType: T.DEPTH_PRICE, unsubscribe: false, marketId: mid, status: { result: Result.SUCCESS } },
+            subscriptionResponse: {
+                correlationId: toLong(0),
+                symbol,
+                subscriptionType: T.DEPTH_PRICE,
+                unsubscribe: false,
+                marketId: mid,
+                status: { result: Result.SUCCESS },
+            },
         });
     };
 
